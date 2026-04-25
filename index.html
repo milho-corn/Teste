@@ -60,6 +60,11 @@ button {
 .player { background: green; }
 .enemy { background: red; }
 
+img {
+  image-rendering: pixelated;
+  margin: 10px;
+}
+
 /* DANO */
 #damageText {
   height: 20px;
@@ -88,11 +93,13 @@ button {
 
   <div class="character-grid">
     <div class="card" onclick="select('kael')">
+      <img src="images/kael.png" width="120">
       <h3>🔥 Kael</h3>
       <p>Assassino de fogo</p>
     </div>
 
     <div class="card" onclick="select('lyra')">
+      <img src="images/lyra.png" width="120">
       <h3>🌪️ Lyra</h3>
       <p>Manipuladora de ar</p>
     </div>
@@ -101,6 +108,10 @@ button {
 
 <div id="game">
   <h2 id="name"></h2>
+
+  <!-- PERSONAGENS -->
+  <img id="playerSprite" width="140">
+  <img id="enemySprite" src="images/enemy.png" width="140">
 
   <div class="bar-container">
     <div id="playerHp" class="bar player"></div>
@@ -140,10 +151,12 @@ function select(char) {
 
   if (char === "kael") {
     player = { name:"Kael", hp:100, atk:9, mag:4 };
+    document.getElementById("playerSprite").src = "images/kael.png";
   }
 
   if (char === "lyra") {
     player = { name:"Lyra", hp:100, atk:5, mag:7 };
+    document.getElementById("playerSprite").src = "images/lyra.png";
   }
 
   document.getElementById("menu").style.display = "none";
@@ -179,7 +192,7 @@ function hitEnemy(){
 }
 
 /* ======================
-   GAME OVER (CORRETO)
+   GAME OVER (FIX REAL)
 ====================== */
 
 function checkGameOver() {
@@ -188,14 +201,26 @@ function checkGameOver() {
 
   if (enemy.hp <= 0) {
     gameOver = true;
-    alert("Você venceu!");
-    location.reload();
+    enemy.hp = 0;
+    update();
+
+    setTimeout(() => {
+      alert("Você venceu!");
+      location.reload();
+    }, 200);
+    return;
   }
 
   if (player.hp <= 0) {
     gameOver = true;
-    alert("Você perdeu!");
-    location.reload();
+    player.hp = 0;
+    update();
+
+    setTimeout(() => {
+      alert("Você perdeu!");
+      location.reload();
+    }, 200);
+    return;
   }
 }
 
@@ -223,7 +248,6 @@ function update() {
 ====================== */
 
 function endTurn() {
-
   if (gameOver) return;
 
   playerTurn = false;
@@ -270,8 +294,7 @@ function kael_double() {
   let d1 = Math.floor(player.atk * 0.7);
   let d2 = Math.floor(player.atk * 0.7);
 
-  enemy.hp -= d1;
-  enemy.hp -= d2;
+  enemy.hp -= d1 + d2;
 
   hitEnemy();
   showDamage(`Kael causou ${d1 + d2} de dano`);
