@@ -3,45 +3,105 @@
 <head>
   <meta charset="UTF-8">
   <title>Simulador de Batalha</title>
+
   <style>
     body {
       font-family: Arial;
       text-align: center;
-      margin-top: 40px;
       background: #111;
       color: #fff;
     }
+
+    .tela {
+      display: none;
+    }
+
+    .ativa {
+      display: block;
+    }
+
     button {
       padding: 10px 20px;
       margin: 10px;
       cursor: pointer;
     }
-    .box {
-      margin: 20px;
+
+    .barra {
+      width: 200px;
+      height: 20px;
+      background: #555;
+      margin: 10px auto;
+      border-radius: 10px;
+      overflow: hidden;
+    }
+
+    .vida {
+      height: 100%;
+      background: limegreen;
+      width: 100%;
+      transition: width 0.3s;
+    }
+
+    .dano {
+      animation: dano 0.3s;
+    }
+
+    @keyframes dano {
+      0% { transform: translateX(0); }
+      25% { transform: translateX(-5px); }
+      50% { transform: translateX(5px); }
+      75% { transform: translateX(-5px); }
+      100% { transform: translateX(0); }
     }
   </style>
 </head>
+
 <body>
 
-  <h1>⚔️ Simulador de Batalha</h1>
-
-  <div class="box">
-    <h2>Jogador ❤️ <span id="hpPlayer">100</span></h2>
-    <h2>Inimigo 👾 <span id="hpEnemy">100</span></h2>
+  <!-- Tela inicial -->
+  <div id="menu" class="tela ativa">
+    <h1>🎮 Simulador de Batalha</h1>
+    <button onclick="iniciar()">Start Game</button>
   </div>
 
-  <button onclick="atacar()">Atacar</button>
-  <button onclick="curar()">Curar</button>
+  <!-- Tela do jogo -->
+  <div id="jogo" class="tela">
+    <h2>Jogador</h2>
+    <div class="barra">
+      <div id="vidaPlayer" class="vida"></div>
+    </div>
 
-  <h2 id="log"></h2>
+    <h2>Inimigo</h2>
+    <div class="barra">
+      <div id="vidaEnemy" class="vida"></div>
+    </div>
+
+    <button onclick="atacar()">Atacar</button>
+    <button onclick="curar()">Curar</button>
+
+    <h3 id="log"></h3>
+  </div>
 
   <script>
     let hpPlayer = 100;
     let hpEnemy = 100;
 
-    function atualizarTela() {
-      document.getElementById("hpPlayer").innerText = hpPlayer;
-      document.getElementById("hpEnemy").innerText = hpEnemy;
+    function iniciar() {
+      document.getElementById("menu").classList.remove("ativa");
+      document.getElementById("jogo").classList.add("ativa");
+      atualizarBarras();
+    }
+
+    function atualizarBarras() {
+      document.getElementById("vidaPlayer").style.width = hpPlayer + "%";
+      document.getElementById("vidaEnemy").style.width = hpEnemy + "%";
+    }
+
+    function animarDano() {
+      document.body.classList.add("dano");
+      setTimeout(() => {
+        document.body.classList.remove("dano");
+      }, 300);
     }
 
     function atacar() {
@@ -52,10 +112,11 @@
       hpPlayer -= danoEnemy;
 
       document.getElementById("log").innerText =
-        "Você causou " + danoPlayer + " de dano e recebeu " + danoEnemy;
+        "Você causou " + danoPlayer + " e recebeu " + danoEnemy;
 
+      animarDano();
       checarFim();
-      atualizarTela();
+      atualizarBarras();
     }
 
     function curar() {
@@ -66,30 +127,23 @@
       hpPlayer -= danoEnemy;
 
       document.getElementById("log").innerText =
-        "Você curou " + cura + " mas recebeu " + danoEnemy;
+        "Curou " + cura + " mas recebeu " + danoEnemy;
 
+      animarDano();
       checarFim();
-      atualizarTela();
+      atualizarBarras();
     }
 
     function checarFim() {
       if (hpPlayer <= 0) {
         alert("💀 Você perdeu!");
-        reiniciar();
+        location.reload();
       }
       if (hpEnemy <= 0) {
         alert("🏆 Você venceu!");
-        reiniciar();
+        location.reload();
       }
     }
-
-    function reiniciar() {
-      hpPlayer = 100;
-      hpEnemy = 100;
-      atualizarTela();
-    }
-
-    atualizarTela();
   </script>
 
 </body>
