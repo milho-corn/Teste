@@ -12,7 +12,6 @@ body {
   text-align: center;
 }
 
-/* estilo pixel simples */
 button {
   font-family: "Courier New", monospace;
   background: #222;
@@ -39,11 +38,26 @@ button:hover {
   display: none;
 }
 
+/* BARRAS */
+.bar-container {
+  width: 300px;
+  margin: 10px auto;
+  border: 2px solid #444;
+  background: #222;
+}
+
 .hp-bar {
-  height: 15px;
-  background: green;
+  height: 18px;
   width: 100%;
   transition: 0.3s;
+}
+
+.player {
+  background: linear-gradient(90deg, limegreen, green);
+}
+
+.enemy {
+  background: linear-gradient(90deg, red, darkred);
 }
 </style>
 </head>
@@ -67,13 +81,20 @@ button:hover {
   </div>
 </div>
 
-<!-- JOGO -->
+<!-- GAME -->
 <div id="game" class="hidden">
   <h1 id="charName"></h1>
 
-  <h3>HP</h3>
-  <div style="width:300px; margin:auto; border:2px solid #444;">
-    <div id="hpBar" class="hp-bar"></div>
+  <!-- PLAYER HP -->
+  <h3>Seu HP</h3>
+  <div class="bar-container">
+    <div id="playerHpBar" class="hp-bar player"></div>
+  </div>
+
+  <!-- ENEMY HP -->
+  <h3>Inimigo HP</h3>
+  <div class="bar-container">
+    <div id="enemyHpBar" class="hp-bar enemy"></div>
   </div>
 
   <p id="status"></p>
@@ -122,9 +143,12 @@ function startGame() {
 }
 
 function updateUI() {
-  document.getElementById("hpBar").style.width = player.hp + "%";
+
+  document.getElementById("playerHpBar").style.width = player.hp + "%";
+  document.getElementById("enemyHpBar").style.width = enemyHP + "%";
+
   document.getElementById("status").innerText =
-    "HP: " + player.hp + " | Inimigo: " + enemyHP;
+    "Seu HP: " + player.hp + " | Inimigo HP: " + enemyHP;
 }
 
 function renderActions() {
@@ -180,7 +204,7 @@ function ultimateLyra() {
   updateUI();
 }
 
-/* inimigo simples */
+/* INIMIGO */
 function enemyTurn() {
   let dmg = Math.floor(Math.random() * 10) + 5;
   player.hp -= dmg;
