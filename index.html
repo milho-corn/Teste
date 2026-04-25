@@ -53,7 +53,6 @@ button {
   font-weight: bold;
 }
 
-/* cooldown visual */
 .cooldown-fill {
   position: absolute;
   left: 0;
@@ -64,6 +63,7 @@ button {
   transform-origin: left;
   transform: scaleX(0);
   z-index: 1;
+  transition: transform 0.2s linear;
 }
 
 button span {
@@ -125,6 +125,7 @@ button span {
 
   <div class="bar-container">
     <div id="playerHp" class="bar player"></div>
+    <div id="playerMana" class="bar" style="background:blue"></div>
     <div class="bar-label" id="playerLabel"></div>
   </div>
 
@@ -151,7 +152,7 @@ let gameOver = false;
 let shield = false;
 let skipEnemyTurn = false;
 
-/* cooldown em segundos */
+/* cooldown */
 let cooldown = {
   double:0,
   smoke:0,
@@ -166,25 +167,25 @@ const maxCooldown = {
   ult:5
 };
 
-/* SKILLS */
+/* SKILLS COM MANA */
 const skills = {
   kael: [
-    {name:"Dupla", key:"double", dmg:2},
-    {name:"Fumaça", key:"smoke", effect:"skip"},
-    {name:"Investida", key:"dash", dmg:2},
-    {name:"ULT", key:"ult", dmg:4, ult:true}
+    {name:"Dupla", key:"double", dmg:2, cost:20},
+    {name:"Fumaça", key:"smoke", effect:"skip", cost:25},
+    {name:"Investida", key:"dash", dmg:2, cost:20},
+    {name:"ULT", key:"ult", dmg:4, ult:true, cost:60}
   ],
   lyra: [
-    {name:"Ar", key:"double", dmg:2},
-    {name:"Voo", key:"dash", dmg:2},
-    {name:"Proteção", key:"smoke", effect:"shield"},
-    {name:"ULT", key:"ult", dmg:5, ult:true}
+    {name:"Ar", key:"double", dmg:1, cost:15},
+    {name:"Voo", key:"dash", dmg:2, cost:20},
+    {name:"Proteção", key:"smoke", effect:"shield", cost:30},
+    {name:"ULT", key:"ult", dmg:5, ult:true, cost:70}
   ],
   dopamina: [
-    {name:"Pisa", key:"double", dmg:2},
-    {name:"Lacre", key:"dash", dmg:2},
-    {name:"Shantay", key:"smoke", effect:"shield"},
-    {name:"ULT", key:"ult", dmg:6, ult:true}
+    {name:"Pisa", key:"double", dmg:2, cost:10},
+    {name:"Lacre", key:"dash", dmg:2, cost:15},
+    {name:"Shantay", key:"smoke", effect:"shield", cost:25},
+    {name:"ULT", key:"ult", dmg:6, ult:true, cost:80}
   ]
 };
 
@@ -199,6 +200,8 @@ function select(char){
     id: char,
     name: char,
     hp: 100,
+    mana: 100,
+    maxMana: 100,
     atk: 8,
     mag: 6
   };
@@ -206,6 +209,7 @@ function select(char){
   enemy.hp = 100;
   gameOver = false;
   round = 1;
+  playerTurn = true;
 
   menu.style.display="none";
   game.style.display="block";
@@ -245,9 +249,12 @@ function update(){
   enemy.hp = clamp(enemy.hp);
 
   playerHp.style.width = player.hp+"%";
+  playerMana.style.width = player.mana+"%";
   enemyHp.style.width = enemy.hp+"%";
 
-  playerLabel.innerText = player.name + " ("+player.hp+"%)";
+  playerLabel.innerText =
+    player.name + " HP:" + player.hp + "% | Mana:" + player.mana + "%";
+
   enemyLabel.innerText = "Inimigo ("+enemy.hp+"%)";
 
   status.innerText = gameOver
@@ -257,12 +264,20 @@ function update(){
   render();
 }
 
-/* cooldown tick */
+/* cooldown tick + mana regen */
 setInterval(() => {
+
   for(let k in cooldown){
     if(cooldown[k] > 0) cooldown[k]--;
   }
+
+  if(player && player.mana < player.maxMana){
+    player.mana += 5;
+    if(player.mana > player.maxMana) player.mana = player.maxMana;
+  }
+
   render();
+
 }, 1000);
 
 function endTurn(){
@@ -309,18 +324,27 @@ function pct(key){
 }
 
 function canUse(key){
-  return player && cooldown[key] <= 0 && playerTurn && !gameOver;
+
+  if(!player || !playerTurn || gameOver) return false;
+
+  let skill = skills[player.id].find(s => s.key === key);
+
+  if(!skill) return false;
+
+  if(cooldown[key] > 0) return false;
+
+  if(player.mana < skill.cost) return false;
+
+  return true;
 }
 
 function useSkill(key){
 
-  if(!player) return;
-
-  let list = skills[player.id] || [];
-  let skill = list.find(s => s.key === key);
+  let skill = skills[player.id].find(s => s.key === key);
 
   if(!skill || !canUse(key)) return;
 
+  player.mana -= skill.cost;
   cooldown[key] = maxCooldown[key];
 
   if(skill.dmg){
@@ -359,7 +383,7 @@ function render(){
         class="${s.ult ? 'ult' : ''}">
 
         <div class="cooldown-fill" style="transform:scaleX(${fill})"></div>
-        <span>${s.name}${cooldown[s.key]>0 ? ` (${cooldown[s.key]})` : ''}</span>
+        <span>${s.name} (${s.cost} mana)</span>
       </button>
     `;
   }).join("");
