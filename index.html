@@ -6,11 +6,14 @@
 
 <style>
 body {
-  font-family: Arial, sans-serif;
-  background: #fff;
+  font-family: "Segoe UI", Arial, sans-serif;
+  background: #f5f7fb;
+  color: #222;
   text-align: center;
+  margin: 0;
 }
 
+/* telas */
 #menu, #game { display: none; }
 
 #startScreen {
@@ -20,50 +23,81 @@ body {
   height: 100vh;
 }
 
+/* títulos */
+h1, h2 {
+  font-weight: 600;
+  letter-spacing: 1px;
+}
+
+/* personagens */
 .character-grid {
   display: flex;
   justify-content: center;
-  gap: 30px;
+  gap: 25px;
   margin-top: 40px;
 }
 
 .card {
   width: 220px;
-  border: 3px solid #444;
+  border-radius: 16px;
   padding: 25px;
   cursor: pointer;
   font-size: 20px;
+  background: white;
+  box-shadow: 0 8px 20px rgba(0,0,0,0.08);
+  transition: 0.25s;
+  border: 1px solid #eee;
 }
 
+.card:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 12px 25px rgba(0,0,0,0.12);
+}
+
+/* botões */
 button {
   position: relative;
-  padding: 20px 25px;
+  padding: 16px 20px;
   margin: 10px;
-  border: 2px solid #444;
+  border-radius: 12px;
+  border: none;
   cursor: pointer;
-  font-size: 16px;
+  font-size: 15px;
   min-width: 180px;
   overflow: hidden;
-  background: white;
+  background: #ffffff;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+  transition: 0.2s;
 }
 
+button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 14px rgba(0,0,0,0.12);
+}
+
+button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* ultimate */
 .ult {
-  border-color: gold;
-  color: #b8860b;
+  background: linear-gradient(135deg, #ffd700, #ffb300);
+  color: #222;
   font-weight: bold;
 }
 
+/* cooldown */
 .cooldown-fill {
   position: absolute;
   left: 0;
   top: 0;
   height: 100%;
   width: 100%;
-  background: rgba(120,120,120,0.65);
+  background: rgba(0,0,0,0.15);
   transform-origin: left;
   transform: scaleX(0);
   z-index: 1;
-  transition: transform 0.2s linear;
 }
 
 button span {
@@ -71,10 +105,13 @@ button span {
   z-index: 2;
 }
 
+/* barras */
 .bar-container {
   width: 340px;
-  border: 2px solid #444;
-  margin: 10px auto;
+  border-radius: 12px;
+  margin: 12px auto;
+  overflow: hidden;
+  background: #e9edf5;
   position: relative;
 }
 
@@ -83,24 +120,43 @@ button span {
   transition: 0.3s;
 }
 
-.player { background: green; }
-.enemy { background: red; }
+/* cores suaves */
+.player {
+  background: linear-gradient(90deg, #4caf50, #2e7d32);
+}
+
+.enemy {
+  background: linear-gradient(90deg, #ef5350, #c62828);
+}
+
+#playerMana {
+  background: linear-gradient(90deg, #42a5f5, #1565c0);
+}
 
 .bar-label {
   position: absolute;
   width: 100%;
   top: 0;
-  left: 0;
-  font-size: 14px;
-  color: white;
-  font-weight: bold;
-  text-shadow: 1px 1px 2px black;
+  font-size: 13px;
+  font-weight: 600;
+  color: #222;
 }
 
+/* status */
+#status {
+  margin-top: 10px;
+  font-weight: 500;
+  color: #555;
+}
+
+/* dano */
 #damageText {
   font-weight: bold;
   margin-top: 10px;
+  color: #ff9800;
+  font-size: 17px;
 }
+  
 </style>
 </head>
 
