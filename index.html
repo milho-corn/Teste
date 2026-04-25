@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Simulador de Batalha</title>
+  <style>
+    body {
+      font-family: Arial;
+      text-align: center;
+      margin-top: 40px;
+      background: #111;
+      color: #fff;
+    }
+    button {
+      padding: 10px 20px;
+      margin: 10px;
+      cursor: pointer;
+    }
+    .box {
+      margin: 20px;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>⚔️ Simulador de Batalha</h1>
+
+  <div class="box">
+    <h2>Jogador ❤️ <span id="hpPlayer">100</span></h2>
+    <h2>Inimigo 👾 <span id="hpEnemy">100</span></h2>
+  </div>
+
+  <button onclick="atacar()">Atacar</button>
+  <button onclick="curar()">Curar</button>
+
+  <h2 id="log"></h2>
+
+  <script>
+    let hpPlayer = 100;
+    let hpEnemy = 100;
+
+    function atualizarTela() {
+      document.getElementById("hpPlayer").innerText = hpPlayer;
+      document.getElementById("hpEnemy").innerText = hpEnemy;
+    }
+
+    function atacar() {
+      let danoPlayer = Math.floor(Math.random() * 20) + 5;
+      let danoEnemy = Math.floor(Math.random() * 15) + 5;
+
+      hpEnemy -= danoPlayer;
+      hpPlayer -= danoEnemy;
+
+      document.getElementById("log").innerText =
+        "Você causou " + danoPlayer + " de dano e recebeu " + danoEnemy;
+
+      checarFim();
+      atualizarTela();
+    }
+
+    function curar() {
+      let cura = Math.floor(Math.random() * 15) + 5;
+      hpPlayer += cura;
+
+      let danoEnemy = Math.floor(Math.random() * 15) + 5;
+      hpPlayer -= danoEnemy;
+
+      document.getElementById("log").innerText =
+        "Você curou " + cura + " mas recebeu " + danoEnemy;
+
+      checarFim();
+      atualizarTela();
+    }
+
+    function checarFim() {
+      if (hpPlayer <= 0) {
+        alert("💀 Você perdeu!");
+        reiniciar();
+      }
+      if (hpEnemy <= 0) {
+        alert("🏆 Você venceu!");
+        reiniciar();
+      }
+    }
+
+    function reiniciar() {
+      hpPlayer = 100;
+      hpEnemy = 100;
+      atualizarTela();
+    }
+
+    atualizarTela();
+  </script>
+
+</body>
+</html>
