@@ -2,14 +2,13 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<title>Mini RPG Estável</title>
+<title>Mini RPG</title>
 
 <style>
 
 body {
   font-family: "Segoe UI", Arial, sans-serif;
   background: #f5f7fb;
-  color: #222;
   text-align: center;
   margin: 0;
 }
@@ -38,75 +37,67 @@ body {
 .character-grid {
   display: flex;
   justify-content: center;
-  gap: 25px;
-  margin-top: 40px;
+  gap: 20px;
 }
 
 .card {
-  width: 220px;
-  border-radius: 16px;
-  padding: 25px;
-  cursor: pointer;
+  padding: 20px;
   background: white;
-  box-shadow: 0 8px 20px rgba(0,0,0,0.08);
-  transition: 0.25s;
+  border-radius: 12px;
+  cursor: pointer;
+  box-shadow: 0 6px 15px rgba(0,0,0,0.08);
 }
-
-.card:hover { transform: translateY(-6px); }
 
 /* barras */
 .bar-container {
-  width: 100%;
-  border-radius: 12px;
+  background: #e9edf5;
+  border-radius: 10px;
   margin: 10px 0;
   overflow: hidden;
-  background: #e9edf5;
   position: relative;
 }
 
 .enemy-box {
-  margin-bottom: 25px; /* 🔥 espaço extra */
+  margin-bottom: 25px;
 }
 
-.bar { height: 24px; transition: 0.3s; }
+.bar {
+  height: 20px;
+}
 
-.player { background: linear-gradient(90deg, #4caf50, #2e7d32); }
-.enemy { background: linear-gradient(90deg, #ef5350, #c62828); }
-#playerMana { background: linear-gradient(90deg, #42a5f5, #1565c0); }
+.player { background: green; }
+.enemy { background: red; }
+#playerMana { background: blue; }
 
 .bar-label {
   position: absolute;
   width: 100%;
+  font-size: 12px;
   top: 0;
-  font-size: 13px;
-  font-weight: 600;
 }
 
-/* ações */
+/* botões */
 .actions {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 10px;
-  margin-top: 15px;
 }
 
 button {
   position: relative;
-  padding: 14px;
-  border-radius: 12px;
+  padding: 10px;
+  border-radius: 10px;
   border: none;
-  cursor: pointer;
   background: white;
-  box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+  cursor: pointer;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.1);
 }
 
-button:disabled { opacity: 0.4; }
-
-.ult {
-  background: linear-gradient(135deg, #ffd700, #ffb300);
+button:disabled {
+  opacity: 0.4;
 }
 
-/* cooldown overlay */
+/* cooldown visual */
 .cooldown-fill {
   position: absolute;
   left: 0;
@@ -118,25 +109,23 @@ button:disabled { opacity: 0.4; }
 }
 
 /* animações */
+.hit {
+  animation: hit 0.3s;
+}
+
 @keyframes hit {
   0% { transform: translateX(0); }
-  25% { transform: translateX(-6px); }
   50% { transform: translateX(6px); }
-  75% { transform: translateX(-4px); }
   100% { transform: translateX(0); }
 }
-.hit { animation: hit 0.3s; }
+
+.fade {
+  animation: fadeUp 0.4s;
+}
 
 @keyframes fadeUp {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-.fade { animation: fadeUp 0.4s; }
-
-#damageText {
-  margin-top: 10px;
-  color: orange;
-  font-weight: bold;
+  from { opacity:0; transform:translateY(10px); }
+  to { opacity:1; transform:translateY(0); }
 }
 
 </style>
@@ -174,7 +163,6 @@ button:disabled { opacity: 0.4; }
       <div class="bar-label" id="playerLabel"></div>
     </div>
 
-    <p id="status"></p>
     <p id="damageText"></p>
 
     <div id="actions" class="actions"></div>
@@ -185,29 +173,17 @@ button:disabled { opacity: 0.4; }
 <script>
 
 let player = null;
-let enemy = { hp: 100 };
+let enemy = { hp:100 };
 
-let cooldown = {0:0,1:0,2:0,3:0};
-const maxCooldown = {0:5,1:5,2:5,3:8};
+let cooldown = [0,0,0,0];
+const maxCd = [5,5,5,8];
 
 const skills = {
   kael: [
     {name:"Dupla", dmg:2, cost:20},
     {name:"Fumaça", dmg:1, cost:25},
     {name:"Investida", dmg:2, cost:20},
-    {name:"ULT", dmg:4, cost:50, ult:true}
-  ],
-  lyra: [
-    {name:"Ar", dmg:1, cost:15},
-    {name:"Voo", dmg:2, cost:20},
-    {name:"Proteção", dmg:1, cost:30},
-    {name:"ULT", dmg:5, cost:60, ult:true}
-  ],
-  dopamina: [
-    {name:"Pisa", dmg:2, cost:10},
-    {name:"Lacre", dmg:2, cost:15},
-    {name:"Shantay", dmg:1, cost:25},
-    {name:"ULT", dmg:6, cost:70, ult:true}
+    {name:"ULT", dmg:4, cost:50}
   ]
 };
 
@@ -217,21 +193,19 @@ function startGame(){
 }
 
 function select(char){
-  player = { id: char, name: char, hp: 100, mana: 100, maxMana:100, atk: 8 };
+  player = { id:char, hp:100, mana:100, maxMana:100, atk:8 };
   enemy.hp = 100;
-  cooldown = {0:0,1:0,2:0,3:0};
+  cooldown = [0,0,0,0];
   menu.style.display="none";
   game.style.display="block";
   update();
 }
 
-/* regen mana + cooldown */
+/* regen */
 setInterval(()=>{
   if(player){
-    player.mana = Math.min(player.maxMana, player.mana + 3);
-    for(let k in cooldown){
-      if(cooldown[k] > 0) cooldown[k]--;
-    }
+    player.mana = Math.min(player.maxMana, player.mana+3);
+    cooldown = cooldown.map(c=>Math.max(0,c-1));
     render();
   }
 },1000);
@@ -241,8 +215,8 @@ function update(){
   playerMana.style.width = player.mana+"%";
   enemyHp.style.width = enemy.hp+"%";
 
-  playerLabel.innerText = player.name + " HP:" + player.hp + " | Mana:" + player.mana;
-  enemyLabel.innerText = "Inimigo ("+enemy.hp+"%)";
+  playerLabel.innerText = "HP:"+player.hp+" Mana:"+player.mana;
+  enemyLabel.innerText = "Inimigo "+enemy.hp;
 
   render();
 }
@@ -250,48 +224,36 @@ function update(){
 function render(){
   actions.innerHTML = skills[player.id].map((s,i)=>{
 
-    let disabled = cooldown[i] > 0 || player.mana < s.cost;
+    let disabled = cooldown[i]>0 || player.mana<s.cost;
 
     return `
-      <button onclick="useSkill(${i})"
-        ${disabled?"disabled":""}
-        class="${s.ult?'ult':''}">
-        
-        <div class="cooldown-fill" style="transform:scaleX(${cooldown[i]/maxCooldown[i]})"></div>
-        <span>${s.name} (${s.cost})</span>
+      <button onclick="useSkill(${i})" ${disabled?"disabled":""}>
+        <div class="cooldown-fill" style="transform:scaleX(${cooldown[i]/maxCd[i]})"></div>
+        ${s.name} (${s.cost})
       </button>
     `;
   }).join("");
 }
 
-function endGame(text){
-  damageText.innerText = text;
-  setTimeout(()=>{
-    game.style.display="none";
-    startScreen.style.display="flex";
-  },1500);
-}
-
 function useSkill(i){
 
   let s = skills[player.id][i];
-  if(cooldown[i] > 0 || player.mana < s.cost) return;
+  if(cooldown[i]>0 || player.mana<s.cost) return;
 
   player.mana -= s.cost;
-  cooldown[i] = maxCooldown[i];
+  cooldown[i] = maxCd[i];
 
-  let dmg = player.atk * s.dmg;
+  let dmg = s.dmg * player.atk;
   enemy.hp -= dmg;
 
   enemyBox.classList.add("hit");
   setTimeout(()=>enemyBox.classList.remove("hit"),300);
 
-  damageText.innerText = s.name + " causou " + dmg;
+  damageText.innerText = "Você causou "+dmg;
   damageText.classList.add("fade");
 
-  if(enemy.hp <= 0){
-    endGame("Você venceu!");
-    return;
+  if(enemy.hp<=0){
+    return endGame("Você venceu!");
   }
 
   update();
@@ -306,15 +268,21 @@ function enemyTurn(){
   playerHp.classList.add("hit");
   setTimeout(()=>playerHp.classList.remove("hit"),300);
 
-  damageText.innerText = "Inimigo causou " + dmg;
-  damageText.classList.add("fade");
+  damageText.innerText = "Inimigo causou "+dmg;
 
-  if(player.hp <= 0){
-    endGame("Você perdeu!");
-    return;
+  if(player.hp<=0){
+    return endGame("Você perdeu!");
   }
 
   update();
+}
+
+function endGame(text){
+  damageText.innerText = text;
+  setTimeout(()=>{
+    game.style.display="none";
+    startScreen.style.display="flex";
+  },1500);
 }
 
 </script>
