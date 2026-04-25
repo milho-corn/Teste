@@ -20,7 +20,6 @@ body {
   height: 100vh;
 }
 
-/* PERSONAGENS */
 .character-grid {
   display: flex;
   justify-content: center;
@@ -36,7 +35,6 @@ body {
   font-size: 20px;
 }
 
-/* BOTÕES */
 button {
   position: relative;
   padding: 20px 25px;
@@ -49,14 +47,13 @@ button {
   background: white;
 }
 
-/* ULT dourado */
 .ult {
   border-color: gold;
   color: #b8860b;
   font-weight: bold;
 }
 
-/* COOLDOWN */
+/* COOLDOWN BAR */
 .cooldown-fill {
   position: absolute;
   left: 0;
@@ -69,13 +66,11 @@ button {
   z-index: 1;
 }
 
-/* texto por cima */
 button span {
   position: relative;
   z-index: 2;
 }
 
-/* BARRAS */
 .bar-container {
   width: 340px;
   border: 2px solid #444;
@@ -156,7 +151,7 @@ let gameOver = false;
 let shield = false;
 let skipEnemyTurn = false;
 
-/* cooldown */
+/* COOLDOWN EM SEGUNDOS */
 let cooldown = {
   double:0,
   smoke:0,
@@ -164,41 +159,63 @@ let cooldown = {
   ult:0
 };
 
-let cooldownMax = {
-  double:2,
-  smoke:3,
-  dash:2,
+const maxCooldown = {
+  double:10,
+  smoke:10,
+  dash:10,
   ult:5
 };
 
-/* START */
+/* SKILLS DEFINIÇÃO (OPÇÃO B LIMPA) */
+const skills = {
+  kael: [
+    {name:"Dupla", key:"double", dmg:2},
+    {name:"Fumaça", key:"smoke", effect:"skip"},
+    {name:"Investida", key:"dash", dmg:2},
+    {name:"ULT", key:"ult", ult:true, dmg:4}
+  ],
+  lyra: [
+    {name:"Ar", key:"double", dmg:2},
+    {name:"Voo", key:"dash", dmg:2},
+    {name:"Proteção", key:"smoke", effect:"shield"},
+    {name:"ULT", key:"ult", ult:true, dmg:5}
+  ],
+  dopamina: [
+    {name:"Pisa", key:"double", dmg:2},
+    {name:"Lacre", key:"dash", dmg:2},
+    {name:"Shantay", key:"smoke", effect:"shield"},
+    {name:"ULT", key:"ult", ult:true, dmg:6}
+  ]
+};
+
 function startGame(){
   startScreen.style.display="none";
   menu.style.display="block";
 }
 
 function select(char){
-  if(char==="kael") player={name:"Kael",hp:100,atk:9,mag:4};
-  if(char==="lyra") player={name:"Lyra",hp:100,atk:5,mag:7};
-  if(char==="dopamina") player={name:"Dopamina",hp:100,atk:8,mag:8};
+  player = {
+    name: char,
+    hp: 100,
+    atk: 8,
+    mag: 6,
+    id: char
+  };
 
   menu.style.display="none";
   game.style.display="block";
-
   update();
 }
 
 function clamp(v){ return Math.max(0,Math.min(100,v)); }
 function delay(ms){ return new Promise(r=>setTimeout(r,ms)); }
 
-/* GAME OVER */
 function checkGameOver(){
-
   if(enemy.hp <= 0){
     enemy.hp = 0;
     gameOver = true;
     update();
-    setTimeout(()=>alert("Você venceu!"),300);
+    alert("Você venceu!");
     return true;
   }
 
@@ -206,14 +223,12 @@ function checkGameOver(){
     player.hp = 0;
     gameOver = true;
     update();
-    setTimeout(()=>alert("Você perdeu!"),300);
+    alert("Você perdeu!");
     return true;
   }
-
   return false;
 }
 
-/* UPDATE */
 function update(){
 
   player.hp = clamp(player.hp);
@@ -232,22 +247,18 @@ function update(){
   render();
 }
 
-/* TIMER DE COOLDOWN REAL */
+/* COOLDOWN TICK (10s = 10 frames) */
 setInterval(() => {
-
   for(let k in cooldown){
-    if(cooldown[k] > 0){
-      cooldown[k]--;
-      render();
-    }
+    if(cooldown[k] > 0) cooldown[k]--;
   }
-
+  render();
 }, 1000);
 
-/* TURN */
+/* TURNOS */
 function endTurn(){
   if(gameOver) return;
-  playerTurn=false;
+  playerTurn = false;
   update();
   setTimeout(enemyTurn,1200);
 }
@@ -256,19 +267,11 @@ async function enemyTurn(){
 
   if(gameOver) return;
 
-  if(skipEnemyTurn){
-    skipEnemyTurn=false;
-    round++;
-    playerTurn=true;
-    update();
-    return;
-  }
-
   let dmg = Math.floor(Math.random()*10)+5;
 
   if(shield){
     dmg = Math.floor(dmg*0.5);
-    shield=false;
+    shield = false;
   }
 
   player.hp -= dmg;
@@ -279,76 +282,66 @@ async function enemyTurn(){
   await delay(1200);
 
   round++;
-  playerTurn=true;
+  playerTurn = true;
   update();
 }
 
-/* HELPERS UI */
-function cooldownPct(key){
-  if(cooldown[key] <= 0) return 0;
-  return cooldown[key] / cooldownMax[key];
+/* UI COOLDOWN */
+function pct(key){
+  return cooldown[key] > 0 ? cooldown[key]/maxCooldown[key] : 0;
 }
 
-function btn(label, fn, key, ult=false){
-
-  let pct = cooldownPct(key);
-  let disabled = cooldown[key] > 0 || gameOver || !playerTurn;
-
-  return `
-  <button onclick="${fn}()" ${disabled?"disabled":""} class="${ult?'ult':''}">
-    <div class="cooldown-fill" style="transform:scaleX(${pct})"></div>
-    <span>${label}${cooldown[key]>0?` (${cooldown[key]})`:''}</span>
-  </button>`;
+function canUse(key){
+  return cooldown[key] <= 0 && playerTurn && !gameOver;
 }
 
-/* ===== KAEL ===== */
-function kael_double(){
-  if(!playerTurn || cooldown.double || gameOver) return;
-  cooldown.double=2;
-  enemy.hp -= player.atk*2;
-  damageText.innerText="Dupla flamejante";
+/* EXECUTA SKILL */
+function useSkill(key, skill){
+
+  if(!canUse(key)) return;
+
+  cooldown[key] = maxCooldown[key];
+
+  if(skill.dmg){
+    enemy.hp -= player.atk * skill.dmg;
+    damageText.innerText = skill.name;
+  }
+
+  if(skill.effect === "skip"){
+    skipEnemyTurn = true;
+  }
+
+  if(skill.effect === "shield"){
+    shield = true;
+  }
+
+  if(skill.ult){
+    enemy.hp -= player.atk * skill.dmg;
+  }
+
   if(checkGameOver()) return;
   endTurn();
 }
 
-function kael_smoke(){
-  if(!playerTurn || cooldown.smoke || gameOver) return;
-  cooldown.smoke=3;
-  skipEnemyTurn=true;
-  damageText.innerText="Fumaça";
-  endTurn();
-}
-
-function kael_dash(){
-  if(!playerTurn || cooldown.dash || gameOver) return;
-  cooldown.dash=2;
-  enemy.hp -= player.atk*2;
-  damageText.innerText="Investida";
-  if(checkGameOver()) return;
-  endTurn();
-}
-
-function kael_ult(){
-  if(!playerTurn || round<3 || cooldown.ult || gameOver) return;
-  cooldown.ult=5;
-  enemy.hp -= player.atk*4;
-  damageText.innerText="FATALIDADE";
-  if(checkGameOver()) return;
-  endTurn();
-}
-
-/* ===== RENDER ===== */
+/* RENDER */
 function render(){
 
-  let ultReady = round>=3 && cooldown.ult===0;
+  let list = skills[player.id] || [];
 
-  if(player.name==="Kael"){
-    actions.innerHTML =
-      btn("Dupla","kael_double","double") +
-      btn("Fumaça","kael_smoke","smoke") +
-      btn("Investida","kael_dash","dash") +
-      btn("ULT","kael_ult","ult",true);
-  }
+  actions.innerHTML = list.map(s => {
+    let disabled = !canUse(s.key);
+    let fill = pct(s.key);
+
+    return `
+      <button onclick="useSkill('${s.key}', ${JSON.stringify(s)})"
+        ${disabled?"disabled":""}
+        class="${s.ult?'ult':''}">
+
+        <div class="cooldown-fill" style="transform:scaleX(${fill})"></div>
+        <span>${s.name}${cooldown[s.key]>0?` (${cooldown[s.key]})`:''}</span>
+      </button>
+    `;
+  }).join("");
 }
 
 </script>
