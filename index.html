@@ -11,9 +11,7 @@ body {
   text-align: center;
 }
 
-/* ======================
-   START SCREEN
-====================== */
+/* START */
 #startScreen {
   display: flex;
   flex-direction: column;
@@ -30,9 +28,7 @@ body {
 }
 
 /* MENU */
-#menu {
-  display: none;
-}
+#menu { display: none; }
 
 .character-grid {
   display: flex;
@@ -51,13 +47,10 @@ body {
 
 .card:hover {
   transform: scale(1.05);
-  background: #eaeaea;
 }
 
 /* GAME */
-#game {
-  display: none;
-}
+#game { display: none; }
 
 button {
   padding: 10px;
@@ -65,6 +58,11 @@ button {
   border: 2px solid #444;
   background: #eee;
   cursor: pointer;
+}
+
+button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
 }
 
 .bar-container {
@@ -82,40 +80,24 @@ button {
 .player { background: green; }
 .enemy { background: red; }
 
-/* DANO */
 #damageText {
   height: 20px;
   margin: 10px;
   font-weight: bold;
   color: #b30000;
 }
-
-/* HIT */
-.hit {
-  animation: hitAnim 0.2s;
-}
-
-@keyframes hitAnim {
-  0% { transform: translateX(0); }
-  50% { transform: translateX(-6px); }
-  100% { transform: translateX(0); }
-}
 </style>
 </head>
 
 <body>
 
-<!-- ======================
-   START SCREEN
-====================== -->
+<!-- START -->
 <div id="startScreen">
   <h1>Mini RPG</h1>
   <button onclick="startGame()">START THE GAME</button>
 </div>
 
-<!-- ======================
-   MENU
-====================== -->
+<!-- MENU -->
 <div id="menu">
   <h2>Escolha seu personagem</h2>
 
@@ -132,9 +114,7 @@ button {
   </div>
 </div>
 
-<!-- ======================
-   GAME
-====================== -->
+<!-- GAME -->
 <div id="game">
   <h2 id="name"></h2>
 
@@ -172,13 +152,21 @@ let enemy = { hp: 100 };
 
 let playerTurn = true;
 let round = 1;
+let gameOver = false;
 
 let shield = false;
 let skipEnemyTurn = false;
-let gameOver = false;
+
+/* COOLDOWNS */
+let cooldown = {
+  double: 0,
+  smoke: 0,
+  dash: 0,
+  ult: 0
+};
 
 /* ======================
-   START
+   SELECT
 ====================== */
 
 function select(char) {
@@ -211,16 +199,12 @@ function clamp(v){
   return Math.max(0, Math.min(100, v));
 }
 
-function showDamage(text){
-  const el = document.getElementById("damageText");
-  el.innerText = text;
-  setTimeout(() => el.innerText = "", 700);
+function delay(ms){
+  return new Promise(r => setTimeout(r, ms));
 }
 
-function hitEnemy(){
-  const bar = document.getElementById("enemyHp");
-  bar.classList.add("hit");
-  setTimeout(() => bar.classList.remove("hit"), 200);
+function showDamage(text){
+  document.getElementById("damageText").innerText = text;
 }
 
 /* ======================
@@ -228,53 +212,21 @@ function hitEnemy(){
 ====================== */
 
 function checkGameOver() {
-
-  if (gameOver) return;
-
   if (enemy.hp <= 0) {
     gameOver = true;
-    enemy.hp = 0;
-    update();
-    setTimeout(() => {
-      alert("Você venceu!");
-      location.reload();
-    }, 200);
-    return;
+    alert("Você venceu!");
+    location.reload();
   }
 
   if (player.hp <= 0) {
     gameOver = true;
-    player.hp = 0;
-    update();
-    setTimeout(() => {
-      alert("Você perdeu!");
-      location.reload();
-    }, 200);
-    return;
+    alert("Você perdeu!");
+    location.reload();
   }
 }
 
 /* ======================
-   UI
-====================== */
-
-function update() {
-
-  if (gameOver) return;
-
-  player.hp = clamp(player.hp);
-  enemy.hp = clamp(enemy.hp);
-
-  document.getElementById("playerHp").style.width = player.hp + "%";
-  document.getElementById("enemyHp").style.width = enemy.hp + "%";
-
-  document.getElementById("status").innerText =
-    `Rodada ${round} | ` +
-    (playerTurn ? "Sua vez ⚔️" : "Inimigo atacando 👾");
-}
-
-/* ======================
-   TURNOS
+   TURN SYSTEM
 ====================== */
 
 function endTurn() {
@@ -282,19 +234,19 @@ function endTurn() {
   if (gameOver) return;
 
   playerTurn = false;
+  render();
   update();
 
-  setTimeout(enemyTurn, 400);
+  setTimeout(enemyTurn, 1200); // ⏳ mais lento
 }
 
-function enemyTurn() {
-
-  if (gameOver) return;
+async function enemyTurn() {
 
   if (skipEnemyTurn) {
     skipEnemyTurn = false;
     playerTurn = true;
     round++;
+    render();
     update();
     return;
   }
@@ -308,66 +260,113 @@ function enemyTurn() {
 
   player.hp -= dmg;
 
+  showDamage(`Inimigo causou ${dmg}`);
+
   checkGameOver();
+
+  await delay(1200); // ⏳ tempo pra ler dano
 
   round++;
   playerTurn = true;
+
+  render();
   update();
+}
+
+/* ======================
+   COOLDOWN UPDATE
+====================== */
+
+function tickCooldowns(){
+  for (let k in cooldown) {
+    if (cooldown[k] > 0) cooldown[k]--;
+  }
+}
+
+/* ======================
+   UPDATE UI
+====================== */
+
+function update() {
+
+  player.hp = clamp(player.hp);
+  enemy.hp = clamp(enemy.hp);
+
+  document.getElementById("playerHp").style.width = player.hp + "%";
+  document.getElementById("enemyHp").style.width = enemy.hp + "%";
+
+  document.getElementById("status").innerText =
+    `Rodada ${round} | ${playerTurn ? "Sua vez ⚔️" : "Inimigo..."}`;
+
+  tickCooldowns();
 }
 
 /* ======================
    KAEL
 ====================== */
 
-function kael_double() {
-  if (!playerTurn || gameOver) return;
+async function kael_double() {
+  if (!playerTurn || cooldown.double > 0) return;
 
-  let d1 = Math.floor(player.atk * 0.7);
-  let d2 = Math.floor(player.atk * 0.7);
+  cooldown.double = 2;
 
-  enemy.hp -= d1 + d2;
+  let dmg = Math.floor(player.atk * 1.4);
 
-  hitEnemy();
-  showDamage(`Kael causou ${d1 + d2} de dano`);
+  enemy.hp -= dmg;
+
+  showDamage(`Kael causou ${dmg}`);
 
   checkGameOver();
+  render();
+
+  await delay(1200);
   endTurn();
 }
 
-function kael_smoke() {
-  if (!playerTurn || gameOver) return;
+async function kael_smoke() {
+  if (!playerTurn || cooldown.smoke > 0) return;
+
+  cooldown.smoke = 3;
 
   skipEnemyTurn = true;
   showDamage("Kael usou fumaça!");
 
+  render();
+  await delay(1200);
   endTurn();
 }
 
-function kael_dash() {
-  if (!playerTurn || gameOver) return;
+async function kael_dash() {
+  if (!playerTurn || cooldown.dash > 0) return;
+
+  cooldown.dash = 2;
 
   let dmg = player.atk * 2;
-
   enemy.hp -= dmg;
 
-  hitEnemy();
-  showDamage(`Kael causou ${dmg} de dano`);
+  showDamage(`Kael causou ${dmg}`);
 
   checkGameOver();
+  render();
+
+  await delay(1200);
   endTurn();
 }
 
-function kael_ult() {
-  if (!playerTurn || gameOver) return;
+async function kael_ult() {
+  if (!playerTurn || round < 3 || cooldown.ult > 0) return;
+
+  cooldown.ult = 5;
 
   let dmg = player.atk * 4;
-
   enemy.hp -= dmg;
 
-  hitEnemy();
-  showDamage(`ULTIMATE! ${dmg} de dano`);
+  showDamage(`ULTIMATE! ${dmg}`);
 
   checkGameOver();
+  render();
+
+  await delay(1200);
   endTurn();
 }
 
@@ -375,78 +374,94 @@ function kael_ult() {
    LYRA
 ====================== */
 
-function lyra_air() {
-  if (!playerTurn || gameOver) return;
+async function lyra_air() {
+  if (!playerTurn || cooldown.double > 0) return;
+
+  cooldown.double = 2;
 
   let dmg = player.mag * 2;
-
   enemy.hp -= dmg;
 
-  hitEnemy();
-  showDamage(`Lyra causou ${dmg} de dano mágico`);
+  showDamage(`Lyra causou ${dmg}`);
 
   checkGameOver();
+  render();
+
+  await delay(1200);
   endTurn();
 }
 
-function lyra_fly() {
-  if (!playerTurn || gameOver) return;
+async function lyra_fly() {
+  if (!playerTurn || cooldown.dash > 0) return;
+
+  cooldown.dash = 2;
 
   let dmg = player.atk * 2;
-
   enemy.hp -= dmg;
 
-  hitEnemy();
-  showDamage(`Lyra atacou ${dmg} de dano`);
+  showDamage(`Lyra atacou ${dmg}`);
 
   checkGameOver();
+  render();
+
+  await delay(1200);
   endTurn();
 }
 
-function lyra_shield() {
-  if (!playerTurn || gameOver) return;
+async function lyra_shield() {
+  if (!playerTurn || cooldown.smoke > 0) return;
+
+  cooldown.smoke = 3;
 
   shield = true;
   showDamage("Lyra ativou proteção");
 
+  render();
+
+  await delay(1200);
   endTurn();
 }
 
-function lyra_ult() {
-  if (!playerTurn || gameOver) return;
+async function lyra_ult() {
+  if (!playerTurn || round < 3 || cooldown.ult > 0) return;
+
+  cooldown.ult = 5;
 
   let dmg = player.mag * 5;
-
   enemy.hp -= dmg;
 
-  hitEnemy();
-  showDamage(`FURACÃO! ${dmg} de dano`);
+  showDamage(`FURACÃO! ${dmg}`);
 
   checkGameOver();
+  render();
+
+  await delay(1200);
   endTurn();
 }
 
 /* ======================
-   BOTÕES
+   RENDER BUTTONS
 ====================== */
 
 function render() {
 
+  let ultReady = round >= 3 && cooldown.ult === 0;
+
   if (player.name === "Kael") {
     document.getElementById("actions").innerHTML = `
-      <button onclick="kael_double()">Duplo Corte</button>
-      <button onclick="kael_smoke()">Fumaça</button>
-      <button onclick="kael_dash()">Investida</button>
-      <button onclick="kael_ult()">Ultimate</button>
+      <button onclick="kael_double()" ${cooldown.double>0?'disabled':''}>Duplo Corte</button>
+      <button onclick="kael_smoke()" ${cooldown.smoke>0?'disabled':''}>Fumaça</button>
+      <button onclick="kael_dash()" ${cooldown.dash>0?'disabled':''}>Investida</button>
+      <button onclick="kael_ult()" ${!ultReady?'disabled':''}>Ultimate</button>
     `;
   }
 
   if (player.name === "Lyra") {
     document.getElementById("actions").innerHTML = `
-      <button onclick="lyra_air()">Sopro de Ar</button>
-      <button onclick="lyra_fly()">Voo</button>
-      <button onclick="lyra_shield()">Proteção</button>
-      <button onclick="lyra_ult()">Furacão</button>
+      <button onclick="lyra_air()" ${cooldown.double>0?'disabled':''}>Sopro de Ar</button>
+      <button onclick="lyra_fly()" ${cooldown.dash>0?'disabled':''}>Voo</button>
+      <button onclick="lyra_shield()" ${cooldown.smoke>0?'disabled':''}>Proteção</button>
+      <button onclick="lyra_ult()" ${!ultReady?'disabled':''}>Furacão</button>
     `;
   }
 }
