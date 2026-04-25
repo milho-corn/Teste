@@ -178,12 +178,25 @@ let enemy = { hp:100 };
 let cooldown = [0,0,0,0];
 const maxCd = [5,5,5,8];
 
+/* 🔥 AGORA COM TODOS OS PERSONAGENS */
 const skills = {
   kael: [
     {name:"Dupla", dmg:2, cost:20},
     {name:"Fumaça", dmg:1, cost:25},
     {name:"Investida", dmg:2, cost:20},
     {name:"ULT", dmg:4, cost:50}
+  ],
+  lyra: [
+    {name:"Ar", dmg:1, cost:15},
+    {name:"Voo", dmg:2, cost:20},
+    {name:"Proteção", dmg:1, cost:30},
+    {name:"ULT", dmg:5, cost:60}
+  ],
+  dopamina: [
+    {name:"Pisa", dmg:2, cost:10},
+    {name:"Lacre", dmg:2, cost:15},
+    {name:"Shantay", dmg:1, cost:25},
+    {name:"ULT", dmg:6, cost:70}
   ]
 };
 
@@ -222,7 +235,10 @@ function update(){
 }
 
 function render(){
-  actions.innerHTML = skills[player.id].map((s,i)=>{
+
+  let list = skills[player.id] || [];
+
+  actions.innerHTML = list.map((s,i)=>{
 
     let disabled = cooldown[i]>0 || player.mana<s.cost;
 
