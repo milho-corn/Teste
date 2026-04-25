@@ -93,7 +93,6 @@ body {
 }
 
 button {
-  position: relative;
   padding: 14px;
   border-radius: 12px;
   border: none;
@@ -102,29 +101,23 @@ button {
   box-shadow: 0 4px 10px rgba(0,0,0,0.08);
 }
 
-button:disabled {
-  opacity: 0.4;
+/* animações */
+@keyframes hit {
+  0% { transform: translateX(0); }
+  25% { transform: translateX(-6px); }
+  50% { transform: translateX(6px); }
+  75% { transform: translateX(-4px); }
+  100% { transform: translateX(0); }
 }
 
-.ult {
-  background: linear-gradient(135deg, #ffd700, #ffb300);
+.hit { animation: hit 0.3s; }
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
-.cooldown-fill {
-  position: absolute;
-  left: 0;
-  top: 0;
-  height: 100%;
-  width: 100%;
-  background: rgba(0,0,0,0.15);
-  transform-origin: left;
-  transform: scaleX(0);
-}
-
-button span {
-  position: relative;
-  z-index: 2;
-}
+.fade { animation: fadeUp 0.4s; }
 
 #damageText {
   margin-top: 10px;
@@ -156,15 +149,15 @@ button span {
 
     <h2 id="name"></h2>
 
+    <div class="bar-container" id="enemyBox">
+      <div id="enemyHp" class="bar enemy"></div>
+      <div class="bar-label" id="enemyLabel"></div>
+    </div>
+
     <div class="bar-container">
       <div id="playerHp" class="bar player"></div>
       <div id="playerMana" class="bar"></div>
       <div class="bar-label" id="playerLabel"></div>
-    </div>
-
-    <div class="bar-container">
-      <div id="enemyHp" class="bar enemy"></div>
-      <div class="bar-label" id="enemyLabel"></div>
     </div>
 
     <p id="status"></p>
@@ -177,42 +170,8 @@ button span {
 
 <script>
 
-/* (SEU JS ORIGINAL - NÃO MUDEI NADA) */
-
 let player = null;
 let enemy = { hp: 100 };
-
-let playerTurn = true;
-let round = 1;
-let gameOver = false;
-
-let shield = false;
-let skipEnemyTurn = false;
-
-let cooldown = { double:0, smoke:0, dash:0, ult:0 };
-
-const maxCooldown = { double:10, smoke:10, dash:10, ult:5 };
-
-const skills = {
-  kael: [
-    {name:"Dupla", key:"double", dmg:2, cost:20},
-    {name:"Fumaça", key:"smoke", effect:"skip", cost:25},
-    {name:"Investida", key:"dash", dmg:2, cost:20},
-    {name:"ULT", key:"ult", dmg:4, ult:true, cost:60}
-  ],
-  lyra: [
-    {name:"Ar", key:"double", dmg:1, cost:15},
-    {name:"Voo", key:"dash", dmg:2, cost:20},
-    {name:"Proteção", key:"smoke", effect:"shield", cost:30},
-    {name:"ULT", key:"ult", dmg:5, ult:true, cost:70}
-  ],
-  dopamina: [
-    {name:"Pisa", key:"double", dmg:2, cost:10},
-    {name:"Lacre", key:"dash", dmg:2, cost:15},
-    {name:"Shantay", key:"smoke", effect:"shield", cost:25},
-    {name:"ULT", key:"ult", dmg:6, ult:true, cost:80}
-  ]
-};
 
 function startGame(){
   startScreen.style.display="none";
@@ -220,44 +179,82 @@ function startGame(){
 }
 
 function select(char){
-  player = { id: char, name: char, hp: 100, mana: 100, maxMana: 100, atk: 8 };
+  player = { id: char, name: char, hp: 100, mana: 100, atk: 8 };
   enemy.hp = 100;
-  gameOver = false;
-  round = 1;
-  playerTurn = true;
   menu.style.display="none";
   game.style.display="block";
   update();
 }
 
-function clamp(v){ return Math.max(0,Math.min(100,v)); }
-
 function update(){
-  if(!player) return;
-
   playerHp.style.width = player.hp+"%";
   playerMana.style.width = player.mana+"%";
   enemyHp.style.width = enemy.hp+"%";
 
-  playerLabel.innerText = player.name + " HP:" + player.hp + "% | Mana:" + player.mana + "%";
+  playerLabel.innerText = player.name + " HP:" + player.hp;
   enemyLabel.innerText = "Inimigo ("+enemy.hp+"%)";
 
   render();
 }
 
 function render(){
-  if(!player) return;
-
-  actions.innerHTML = skills[player.id].map(s => `
-    <button onclick="useSkill('${s.key}')">
-      <div class="cooldown-fill"></div>
-      <span>${s.name}</span>
-    </button>
-  `).join("");
+  actions.innerHTML = `<button onclick="useSkill()">Atacar</button>`;
 }
 
-function useSkill(key){
-  enemy.hp -= 10;
+/* 🔥 NOVA FUNÇÃO DE FIM DE JOGO */
+function endGame(text){
+
+  damageText.innerText = text;
+
+  setTimeout(() => {
+    game.style.display = "none";
+    menu.style.display = "none";
+    startScreen.style.display = "flex";
+  }, 1500);
+}
+
+function useSkill(){
+
+  let dmg = 10;
+  enemy.hp -= dmg;
+
+  enemyBox.classList.add("hit");
+  setTimeout(() => enemyBox.classList.remove("hit"), 300);
+
+  damageText.innerText = "Você causou " + dmg;
+  damageText.classList.remove("fade");
+  void damageText.offsetWidth;
+  damageText.classList.add("fade");
+
+  /* 🔥 verifica vitória */
+  if(enemy.hp <= 0){
+    endGame("Você venceu!");
+    return;
+  }
+
+  update();
+  setTimeout(enemyTurn, 800);
+}
+
+function enemyTurn(){
+
+  let dmg = 8;
+  player.hp -= dmg;
+
+  playerHp.classList.add("hit");
+  setTimeout(() => playerHp.classList.remove("hit"), 300);
+
+  damageText.innerText = "Inimigo causou " + dmg;
+  damageText.classList.remove("fade");
+  void damageText.offsetWidth;
+  damageText.classList.add("fade");
+
+  /* 🔥 verifica derrota */
+  if(player.hp <= 0){
+    endGame("Você perdeu!");
+    return;
+  }
+
   update();
 }
 
