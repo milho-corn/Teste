@@ -12,7 +12,7 @@ body {
 }
 
 /* ======================
-   MENU NOVO (CARDS)
+   MENU (CARDS)
 ====================== */
 
 .character-grid {
@@ -36,14 +36,8 @@ body {
   background: #eaeaea;
 }
 
-.card h3 {
-  margin: 5px 0;
-}
-
-.hidden { display: none; }
-
 /* ======================
-   BATALHA
+   GAME
 ====================== */
 
 button {
@@ -68,13 +62,19 @@ button {
 
 .player { background: green; }
 .enemy { background: red; }
+
+.hidden { display: none; }
+
+#game {
+  display: none;
+}
 </style>
 </head>
 
 <body>
 
 <!-- ======================
-     MENU NOVO
+     MENU
 ====================== -->
 
 <div id="menu">
@@ -101,7 +101,7 @@ button {
      GAME
 ====================== -->
 
-<div id="game" class="hidden">
+<div id="game">
   <h2 id="name"></h2>
 
   <div class="bar-container">
@@ -135,7 +135,7 @@ let round = 1;
 let skipEnemyTurn = false;
 
 /* ======================
-   SELEÇÃO
+   SELEÇÃO (CORRIGIDA)
 ====================== */
 
 function select(char) {
@@ -148,12 +148,12 @@ function select(char) {
     player = { name:"Lyra", hp:100, atk:5, mag:7, speed:9 };
   }
 
-  document.getElementById("menu").classList.add("hidden");
-  document.getElementById("game").classList.remove("hidden");
+  document.getElementById("menu").style.display = "none";
+  document.getElementById("game").style.display = "block";
 
   playerTurn = true;
 
-  start();
+  setTimeout(() => start(), 50);
 }
 
 /* ======================
@@ -364,4 +364,12 @@ function render() {
       <button onclick="lyra_air()">Sopro de Ar</button>
       <button onclick="lyra_fly()">Voo Bravo</button>
       <button onclick="lyra_shield()">Proteção de Ventosa</button>
-      <button
+      <button onclick="lyra_ult()">Furacão 2000</button>
+    `;
+  }
+}
+
+</script>
+
+</body>
+</html>
