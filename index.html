@@ -21,9 +21,7 @@ button {
   cursor: pointer;
 }
 
-button:hover {
-  background: #ddd;
-}
+button:hover { background: #ddd; }
 
 .hidden { display: none; }
 
@@ -61,13 +59,11 @@ button:hover {
 
   <div class="box">
     <h2>Kael 🔥</h2>
-    <p>Assassino de fogo</p>
     <button onclick="select('kael')">Selecionar</button>
   </div>
 
   <div class="box">
     <h2>Lyra 🌪️</h2>
-    <p>Manipuladora de ar</p>
     <button onclick="select('lyra')">Selecionar</button>
   </div>
 </div>
@@ -94,54 +90,44 @@ button:hover {
 <script>
 
 /* =========================
-   ESTADO DO JOGO
+   ESTADO
 ========================= */
 
 let player = {};
-let enemy = { hp: 100, speed: 6 };
+let enemy = { hp: 100 };
 
 let playerTurn = true;
-let skipEnemy = false;
+
+let kaelInvisible = false;
+let lyraShield = false;
 
 /* =========================
-   SELEÇÃO DE PERSONAGEM
+   SELEÇÃO
 ========================= */
 
 function select(char) {
 
   if (char === "kael") {
-    player = {
-      name: "Kael",
-      hp: 100,
-      atk: 9,
-      mag: 4,
-      speed: 8
-    };
+    player = { name:"Kael", hp:100, atk:9, mag:4, speed:8 };
   }
 
   if (char === "lyra") {
-    player = {
-      name: "Lyra",
-      hp: 100,
-      atk: 5,
-      mag: 7,
-      speed: 9
-    };
+    player = { name:"Lyra", hp:100, atk:5, mag:7, speed:9 };
   }
 
   document.getElementById("menu").classList.add("hidden");
   document.getElementById("game").classList.remove("hidden");
 
-  playerTurn = player.speed >= enemy.speed;
+  playerTurn = player.speed >= 6;
 
-  startGame();
+  start();
 }
 
 /* =========================
-   INÍCIO
+   INICIO
 ========================= */
 
-function startGame() {
+function start() {
   document.getElementById("name").innerText = player.name;
   render();
   update();
@@ -150,6 +136,10 @@ function startGame() {
 /* =========================
    UI
 ========================= */
+
+function clamp(v) {
+  return Math.max(0, Math.min(100, v));
+}
 
 function update() {
 
@@ -161,10 +151,6 @@ function update() {
 
   document.getElementById("status").innerText =
     playerTurn ? "Sua vez ⚔️" : "Turno do inimigo 👾";
-}
-
-function clamp(v) {
-  return Math.max(0, Math.min(100, v));
 }
 
 /* =========================
@@ -180,31 +166,37 @@ function endTurn() {
 
 function enemyTurn() {
 
-  if (skipEnemy) {
-    skipEnemy = false;
+  if (kaelInvisible) {
+    kaelInvisible = false;
     playerTurn = true;
     update();
     return;
   }
 
   let dmg = Math.floor(Math.random() * 10) + 5;
+
+  if (lyraShield) {
+    dmg = Math.floor(dmg / 2);
+    lyraShield = false;
+  }
+
   player.hp -= dmg;
 
-  checkEnd();
+  check();
 
   playerTurn = true;
   update();
 }
 
 /* =========================
-   AÇÕES DO KAEL
+   KAEL
 ========================= */
 
 function kael_double() {
   if (!playerTurn) return;
 
-  enemy.hp -= player.atk * 2;
-  enemy.hp -= player.atk * 2;
+  enemy.hp -= player.atk * 1.2;
+  enemy.hp -= player.atk * 1.2;
 
   finish();
 }
@@ -212,14 +204,15 @@ function kael_double() {
 function kael_smoke() {
   if (!playerTurn) return;
 
-  skipEnemy = true;
+  kaelInvisible = true;
+
   finish(false);
 }
 
 function kael_dash() {
   if (!playerTurn) return;
 
-  enemy.hp -= player.atk * 3;
+  enemy.hp -= player.atk * 2;
 
   finish();
 }
@@ -227,13 +220,13 @@ function kael_dash() {
 function kael_ult() {
   if (!playerTurn) return;
 
-  enemy.hp -= player.atk * 5;
+  enemy.hp -= player.atk * 4;
 
   finish();
 }
 
 /* =========================
-   AÇÕES DA LYRA
+   LYRA
 ========================= */
 
 function lyra_air() {
@@ -255,7 +248,7 @@ function lyra_fly() {
 function lyra_shield() {
   if (!playerTurn) return;
 
-  player.hp += 10;
+  lyraShield = true;
 
   finish(false);
 }
@@ -263,7 +256,7 @@ function lyra_shield() {
 function lyra_ult() {
   if (!playerTurn) return;
 
-  enemy.hp -= player.mag * 6;
+  enemy.hp -= player.mag * 5;
 
   finish();
 }
@@ -272,11 +265,11 @@ function lyra_ult() {
    FINALIZAÇÃO
 ========================= */
 
-function finish(runEnemy = true) {
-  checkEnd();
+function finish(skip=true) {
+  check();
   update();
 
-  if (runEnemy) endTurn();
+  if (skip) endTurn();
   else {
     playerTurn = false;
     setTimeout(enemyTurn, 600);
@@ -284,10 +277,10 @@ function finish(runEnemy = true) {
 }
 
 /* =========================
-   CHECAGEM
+   CHECK
 ========================= */
 
-function checkEnd() {
+function check() {
 
   if (enemy.hp <= 0) {
     alert("Você venceu!");
@@ -320,7 +313,7 @@ function render() {
       <button onclick="lyra_air()">Sopro de Ar</button>
       <button onclick="lyra_fly()">Voo Bravo</button>
       <button onclick="lyra_shield()">Proteção</button>
-      <button onclick="lyra_ult()">Furacão</button>
+      <button onclick="lyra_ult()">Furacão 2000</button>
     `;
   }
 }
