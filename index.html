@@ -141,7 +141,7 @@ button span {
 
 <script>
 
-let player = {};
+let player = null;
 let enemy = { hp: 100 };
 
 let playerTurn = true;
@@ -151,7 +151,7 @@ let gameOver = false;
 let shield = false;
 let skipEnemyTurn = false;
 
-/* cooldown 10s */
+/* cooldown em segundos */
 let cooldown = {
   double:0,
   smoke:0,
@@ -194,6 +194,7 @@ function startGame(){
 }
 
 function select(char){
+
   player = {
     id: char,
     name: char,
@@ -202,8 +203,13 @@ function select(char){
     mag: 6
   };
 
+  enemy.hp = 100;
+  gameOver = false;
+  round = 1;
+
   menu.style.display="none";
   game.style.display="block";
+
   update();
 }
 
@@ -211,6 +217,7 @@ function clamp(v){ return Math.max(0,Math.min(100,v)); }
 function delay(ms){ return new Promise(r=>setTimeout(r,ms)); }
 
 function checkGameOver(){
+
   if(enemy.hp <= 0){
     enemy.hp = 0;
     gameOver = true;
@@ -230,8 +237,9 @@ function checkGameOver(){
   return false;
 }
 
-/* UPDATE */
 function update(){
+
+  if(!player) return;
 
   player.hp = clamp(player.hp);
   enemy.hp = clamp(enemy.hp);
@@ -249,7 +257,7 @@ function update(){
   render();
 }
 
-/* COOLDOWN */
+/* cooldown tick */
 setInterval(() => {
   for(let k in cooldown){
     if(cooldown[k] > 0) cooldown[k]--;
@@ -257,7 +265,6 @@ setInterval(() => {
   render();
 }, 1000);
 
-/* TURNOS */
 function endTurn(){
   if(gameOver) return;
   playerTurn = false;
@@ -296,19 +303,22 @@ async function enemyTurn(){
   update();
 }
 
-/* HELPERS */
 function pct(key){
+  if(!player) return 0;
   return cooldown[key] > 0 ? cooldown[key]/maxCooldown[key] : 0;
 }
 
 function canUse(key){
-  return cooldown[key] <= 0 && playerTurn && !gameOver;
+  return player && cooldown[key] <= 0 && playerTurn && !gameOver;
 }
 
-/* EXECUÇÃO */
 function useSkill(key){
 
-  let skill = skills[player.id].find(s => s.key === key);
+  if(!player) return;
+
+  let list = skills[player.id] || [];
+  let skill = list.find(s => s.key === key);
+
   if(!skill || !canUse(key)) return;
 
   cooldown[key] = maxCooldown[key];
@@ -329,8 +339,12 @@ function useSkill(key){
   endTurn();
 }
 
-/* RENDER */
 function render(){
+
+  if(!player){
+    actions.innerHTML = "";
+    return;
+  }
 
   let list = skills[player.id] || [];
 
