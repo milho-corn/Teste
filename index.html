@@ -12,8 +12,7 @@ body {
 }
 
 /* TELAS */
-#menu { display: none; }
-#game { display: none; }
+#menu, #game { display: none; }
 
 #startScreen {
   display: flex;
@@ -36,26 +35,45 @@ body {
   padding: 25px;
   cursor: pointer;
   font-size: 20px;
-  transition: 0.2s;
-}
-
-.card:hover {
-  background: #eee;
-  transform: scale(1.05);
 }
 
 /* BOTÕES */
 button {
-  padding: 18px 25px;
+  position: relative;
+  padding: 20px 25px;
   margin: 10px;
   border: 2px solid #444;
   cursor: pointer;
   font-size: 16px;
-  min-width: 160px;
+  min-width: 180px;
+  overflow: hidden;
+  background: white;
 }
 
-button:disabled {
-  opacity: 0.4;
+/* ULT dourado */
+.ult {
+  border-color: gold;
+  color: #b8860b;
+  font-weight: bold;
+}
+
+/* COOLDOWN overlay */
+.cooldown-bar {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  height: 100%;
+  width: 100%;
+  background: rgba(150,150,150,0.6);
+  transform-origin: left;
+  transform: scaleX(1);
+  transition: transform 0.3s linear;
+  pointer-events: none;
+}
+
+button span {
+  position: relative;
+  z-index: 2;
 }
 
 /* BARRAS */
@@ -74,7 +92,6 @@ button:disabled {
 .player { background: green; }
 .enemy { background: red; }
 
-/* NOME NA BARRA */
 .bar-label {
   position: absolute;
   width: 100%;
@@ -86,7 +103,6 @@ button:disabled {
   text-shadow: 1px 1px 2px black;
 }
 
-/* TEXTO */
 #damageText {
   font-weight: bold;
   margin-top: 10px;
@@ -120,7 +136,7 @@ button:disabled {
 
   <div class="bar-container">
     <div id="enemyHp" class="bar enemy"></div>
-    <div class="bar-label" id="enemyLabel">Inimigo</div>
+    <div class="bar-label" id="enemyLabel"></div>
   </div>
 
   <p id="status"></p>
@@ -141,7 +157,11 @@ let gameOver = false;
 let shield = false;
 let skipEnemyTurn = false;
 
-let cooldown = { double:0, smoke:0, dash:0, ult:0 };
+/* cooldown com max fixo */
+let cooldown = {
+  double:0, smoke:0, dash:0, ult:0,
+  max: {double:2, smoke:3, dash:2, ult:5}
+};
 
 function startGame(){
   startScreen.style.display="none";
@@ -149,27 +169,24 @@ function startGame(){
 }
 
 function select(char){
-
   if(char==="kael") player={name:"Kael",hp:100,atk:9,mag:4};
   if(char==="lyra") player={name:"Lyra",hp:100,atk:5,mag:7};
   if(char==="dopamina") player={name:"Dopamina",hp:100,atk:8,mag:8};
 
   menu.style.display="none";
   game.style.display="block";
-
   update();
 }
 
 function clamp(v){ return Math.max(0,Math.min(100,v)); }
 function delay(ms){ return new Promise(r=>setTimeout(r,ms)); }
 
-/* GAME OVER */
 function checkGameOver(){
 
   if(enemy.hp <= 0){
     enemy.hp = 0;
     gameOver = true;
-    update(); // 🔥 força atualizar barra antes do alert
+    update();
     setTimeout(()=>alert("Você venceu!"),300);
     return true;
   }
@@ -199,6 +216,11 @@ function update(){
   status.innerText = gameOver
     ? "Fim de jogo"
     : `Rodada ${round} | ${playerTurn?"Sua vez ⚔️":"Inimigo..."}`;
+
+  for(let k in cooldown){
+    if(typeof cooldown[k]==="number" && cooldown[k]>0)
+      cooldown[k]--;
+  }
 
   render();
 }
@@ -241,7 +263,28 @@ async function enemyTurn(){
   update();
 }
 
-/* ===== KAEL ===== */
+/* ===================== */
+/* HELPERS UI COOLDOWN   */
+/* ===================== */
+
+function cooldownPct(name){
+  if(cooldown[name] <= 0) return 0;
+  return (cooldown[name] / cooldown.max[name]) * 100;
+}
+
+function btn(label, fn, key, ult=false){
+  let pct = cooldownPct(key);
+  let disabled = (cooldown[key] > 0 || gameOver || !playerTurn);
+
+  return `
+  <button onclick="${fn}()" ${disabled?"disabled":""} class="${ult?'ult':''}">
+    <div class="cooldown-bar" style="transform:scaleX(${pct/100})"></div>
+    <span>${label}${cooldown[key]>0?` (${cooldown[key]})`:''}</span>
+  </button>`;
+}
+
+/* ===== ATAQUES ===== */
+
 function kael_double(){
   if(!playerTurn || cooldown.double || gameOver) return;
   cooldown.double=2;
@@ -277,108 +320,21 @@ function kael_ult(){
   endTurn();
 }
 
-/* ===== LYRA ===== */
-function lyra_air(){
-  if(!playerTurn || cooldown.double || gameOver) return;
-  cooldown.double=2;
-  enemy.hp -= player.mag*2;
-  damageText.innerText="Sopro de ar";
-  if(checkGameOver()) return;
-  endTurn();
-}
+/* ===== RENDER ===== */
 
-function lyra_fly(){
-  if(!playerTurn || cooldown.dash || gameOver) return;
-  cooldown.dash=2;
-  enemy.hp -= player.atk*2;
-  damageText.innerText="Voo bravo";
-  if(checkGameOver()) return;
-  endTurn();
-}
-
-function lyra_shield(){
-  if(!playerTurn || cooldown.smoke || gameOver) return;
-  cooldown.smoke=3;
-  shield=true;
-  damageText.innerText="Proteção";
-  endTurn();
-}
-
-function lyra_ult(){
-  if(!playerTurn || round<3 || cooldown.ult || gameOver) return;
-  cooldown.ult=5;
-  enemy.hp -= player.mag*5;
-  damageText.innerText="Furacão";
-  if(checkGameOver()) return;
-  endTurn();
-}
-
-/* ===== DOPAMINA ===== */
-function dopamina_pisa(){
-  if(!playerTurn || cooldown.double || gameOver) return;
-  cooldown.double=2;
-  enemy.hp -= player.atk*2;
-  damageText.innerText="Pisa menos!";
-  if(checkGameOver()) return;
-  endTurn();
-}
-
-function dopamina_lacre(){
-  if(!playerTurn || cooldown.dash || gameOver) return;
-  cooldown.dash=2;
-  enemy.hp -= player.mag*2;
-  damageText.innerText="Lacre agudo";
-  if(checkGameOver()) return;
-  endTurn();
-}
-
-function dopamina_shantay(){
-  if(!playerTurn || cooldown.smoke || gameOver) return;
-  cooldown.smoke=3;
-  shield=true;
-  damageText.innerText="Shantay!";
-  endTurn();
-}
-
-function dopamina_ult(){
-  if(!playerTurn || round<3 || cooldown.ult || gameOver) return;
-  cooldown.ult=5;
-  enemy.hp -= player.mag*6;
-  damageText.innerText="Sashay away!";
-  if(checkGameOver()) return;
-  endTurn();
-}
-
-/* RENDER */
 function render(){
 
   let ultReady = round>=3 && cooldown.ult===0;
 
   if(player.name==="Kael"){
-    actions.innerHTML=`
-    <button onclick="kael_double()">Dupla</button>
-    <button onclick="kael_smoke()">Fumaça</button>
-    <button onclick="kael_dash()">Investida</button>
-    <button onclick="kael_ult()" ${!ultReady?"disabled":""}>ULT</button>`;
+    actions.innerHTML=
+      btn("Dupla","kael_double","double") +
+      btn("Fumaça","kael_smoke","smoke") +
+      btn("Investida","kael_dash","dash") +
+      btn("ULT","kael_ult","ult",true).replace("disabled", ultReady?"":"disabled");
   }
 
-  if(player.name==="Lyra"){
-    actions.innerHTML=`
-    <button onclick="lyra_air()">Ar</button>
-    <button onclick="lyra_fly()">Voo</button>
-    <button onclick="lyra_shield()">Proteção</button>
-    <button onclick="lyra_ult()" ${!ultReady?"disabled":""}>ULT</button>`;
-  }
-
-  if(player.name==="Dopamina"){
-    actions.innerHTML=`
-    <button onclick="dopamina_pisa()">Pisa</button>
-    <button onclick="dopamina_lacre()">Lacre</button>
-    <button onclick="dopamina_shantay()">Shantay</button>
-    <button onclick="dopamina_ult()" ${!ultReady?"disabled":""}>ULT</button>`;
-  }
 }
-
 </script>
 
 </body>
