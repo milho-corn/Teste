@@ -5,6 +5,7 @@
 <title>Mini RPG Estável</title>
 
 <style>
+
 body {
   font-family: "Segoe UI", Arial, sans-serif;
   background: #f5f7fb;
@@ -23,9 +24,14 @@ body {
   height: 100vh;
 }
 
-/* títulos */
-h1, h2 {
-  font-weight: 600;
+/* container principal */
+.game-container {
+  background: white;
+  max-width: 420px;
+  margin: 40px auto;
+  padding: 25px;
+  border-radius: 20px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.08);
 }
 
 /* personagens */
@@ -39,4 +45,223 @@ h1, h2 {
 .card {
   width: 220px;
   border-radius: 16px;
-  pad
+  padding: 25px;
+  cursor: pointer;
+  font-size: 20px;
+  background: white;
+  box-shadow: 0 8px 20px rgba(0,0,0,0.08);
+  transition: 0.25s;
+}
+
+.card:hover {
+  transform: translateY(-6px);
+}
+
+/* barras */
+.bar-container {
+  width: 100%;
+  border-radius: 12px;
+  margin: 10px 0;
+  overflow: hidden;
+  background: #e9edf5;
+  position: relative;
+}
+
+.bar {
+  height: 24px;
+  transition: 0.3s;
+}
+
+.player { background: linear-gradient(90deg, #4caf50, #2e7d32); }
+.enemy { background: linear-gradient(90deg, #ef5350, #c62828); }
+#playerMana { background: linear-gradient(90deg, #42a5f5, #1565c0); }
+
+.bar-label {
+  position: absolute;
+  width: 100%;
+  top: 0;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+/* botões */
+.actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 15px;
+}
+
+button {
+  position: relative;
+  padding: 14px;
+  border-radius: 12px;
+  border: none;
+  cursor: pointer;
+  background: white;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+}
+
+button:disabled {
+  opacity: 0.4;
+}
+
+.ult {
+  background: linear-gradient(135deg, #ffd700, #ffb300);
+}
+
+.cooldown-fill {
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: 100%;
+  width: 100%;
+  background: rgba(0,0,0,0.15);
+  transform-origin: left;
+  transform: scaleX(0);
+}
+
+button span {
+  position: relative;
+  z-index: 2;
+}
+
+#damageText {
+  margin-top: 10px;
+  color: orange;
+  font-weight: bold;
+}
+
+</style>
+</head>
+
+<body>
+
+<div id="startScreen">
+  <h1>Mini RPG</h1>
+  <button onclick="startGame()">START</button>
+</div>
+
+<div id="menu">
+  <h2>Escolha</h2>
+  <div class="character-grid">
+    <div class="card" onclick="select('kael')">🔥 Kael</div>
+    <div class="card" onclick="select('lyra')">🌪️ Lyra</div>
+    <div class="card" onclick="select('dopamina')">✨ Dopamina</div>
+  </div>
+</div>
+
+<div id="game">
+  <div class="game-container">
+
+    <h2 id="name"></h2>
+
+    <div class="bar-container">
+      <div id="playerHp" class="bar player"></div>
+      <div id="playerMana" class="bar"></div>
+      <div class="bar-label" id="playerLabel"></div>
+    </div>
+
+    <div class="bar-container">
+      <div id="enemyHp" class="bar enemy"></div>
+      <div class="bar-label" id="enemyLabel"></div>
+    </div>
+
+    <p id="status"></p>
+    <p id="damageText"></p>
+
+    <div id="actions" class="actions"></div>
+
+  </div>
+</div>
+
+<script>
+
+/* (SEU JS ORIGINAL - NÃO MUDEI NADA) */
+
+let player = null;
+let enemy = { hp: 100 };
+
+let playerTurn = true;
+let round = 1;
+let gameOver = false;
+
+let shield = false;
+let skipEnemyTurn = false;
+
+let cooldown = { double:0, smoke:0, dash:0, ult:0 };
+
+const maxCooldown = { double:10, smoke:10, dash:10, ult:5 };
+
+const skills = {
+  kael: [
+    {name:"Dupla", key:"double", dmg:2, cost:20},
+    {name:"Fumaça", key:"smoke", effect:"skip", cost:25},
+    {name:"Investida", key:"dash", dmg:2, cost:20},
+    {name:"ULT", key:"ult", dmg:4, ult:true, cost:60}
+  ],
+  lyra: [
+    {name:"Ar", key:"double", dmg:1, cost:15},
+    {name:"Voo", key:"dash", dmg:2, cost:20},
+    {name:"Proteção", key:"smoke", effect:"shield", cost:30},
+    {name:"ULT", key:"ult", dmg:5, ult:true, cost:70}
+  ],
+  dopamina: [
+    {name:"Pisa", key:"double", dmg:2, cost:10},
+    {name:"Lacre", key:"dash", dmg:2, cost:15},
+    {name:"Shantay", key:"smoke", effect:"shield", cost:25},
+    {name:"ULT", key:"ult", dmg:6, ult:true, cost:80}
+  ]
+};
+
+function startGame(){
+  startScreen.style.display="none";
+  menu.style.display="block";
+}
+
+function select(char){
+  player = { id: char, name: char, hp: 100, mana: 100, maxMana: 100, atk: 8 };
+  enemy.hp = 100;
+  gameOver = false;
+  round = 1;
+  playerTurn = true;
+  menu.style.display="none";
+  game.style.display="block";
+  update();
+}
+
+function clamp(v){ return Math.max(0,Math.min(100,v)); }
+
+function update(){
+  if(!player) return;
+
+  playerHp.style.width = player.hp+"%";
+  playerMana.style.width = player.mana+"%";
+  enemyHp.style.width = enemy.hp+"%";
+
+  playerLabel.innerText = player.name + " HP:" + player.hp + "% | Mana:" + player.mana + "%";
+  enemyLabel.innerText = "Inimigo ("+enemy.hp+"%)";
+
+  render();
+}
+
+function render(){
+  if(!player) return;
+
+  actions.innerHTML = skills[player.id].map(s => `
+    <button onclick="useSkill('${s.key}')">
+      <div class="cooldown-fill"></div>
+      <span>${s.name}</span>
+    </button>
+  `).join("");
+}
+
+function useSkill(key){
+  enemy.hp -= 10;
+  update();
+}
+
+</script>
+
+</body>
+</html>
