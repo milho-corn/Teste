@@ -11,7 +11,6 @@ body {
   text-align: center;
 }
 
-/* TELAS */
 #menu, #game { display: none; }
 
 #startScreen {
@@ -57,20 +56,20 @@ button {
   font-weight: bold;
 }
 
-/* COOLDOWN overlay */
-.cooldown-bar {
+/* COOLDOWN */
+.cooldown-fill {
   position: absolute;
   left: 0;
-  bottom: 0;
+  top: 0;
   height: 100%;
   width: 100%;
-  background: rgba(150,150,150,0.6);
+  background: rgba(120,120,120,0.65);
   transform-origin: left;
-  transform: scaleX(1);
-  transition: transform 0.3s linear;
-  pointer-events: none;
+  transform: scaleX(0);
+  z-index: 1;
 }
 
+/* texto por cima */
 button span {
   position: relative;
   z-index: 2;
@@ -157,12 +156,22 @@ let gameOver = false;
 let shield = false;
 let skipEnemyTurn = false;
 
-/* cooldown com max fixo */
+/* cooldown */
 let cooldown = {
-  double:0, smoke:0, dash:0, ult:0,
-  max: {double:2, smoke:3, dash:2, ult:5}
+  double:0,
+  smoke:0,
+  dash:0,
+  ult:0
 };
 
+let cooldownMax = {
+  double:2,
+  smoke:3,
+  dash:2,
+  ult:5
+};
+
+/* START */
 function startGame(){
   startScreen.style.display="none";
   menu.style.display="block";
@@ -175,12 +184,14 @@ function select(char){
 
   menu.style.display="none";
   game.style.display="block";
+
   update();
 }
 
 function clamp(v){ return Math.max(0,Math.min(100,v)); }
 function delay(ms){ return new Promise(r=>setTimeout(r,ms)); }
 
+/* GAME OVER */
 function checkGameOver(){
 
   if(enemy.hp <= 0){
@@ -202,6 +213,7 @@ function checkGameOver(){
   return false;
 }
 
+/* UPDATE */
 function update(){
 
   player.hp = clamp(player.hp);
@@ -217,14 +229,22 @@ function update(){
     ? "Fim de jogo"
     : `Rodada ${round} | ${playerTurn?"Sua vez ⚔️":"Inimigo..."}`;
 
-  for(let k in cooldown){
-    if(typeof cooldown[k]==="number" && cooldown[k]>0)
-      cooldown[k]--;
-  }
-
   render();
 }
 
+/* TIMER DE COOLDOWN REAL */
+setInterval(() => {
+
+  for(let k in cooldown){
+    if(cooldown[k] > 0){
+      cooldown[k]--;
+      render();
+    }
+  }
+
+}, 1000);
+
+/* TURN */
 function endTurn(){
   if(gameOver) return;
   playerTurn=false;
@@ -263,28 +283,25 @@ async function enemyTurn(){
   update();
 }
 
-/* ===================== */
-/* HELPERS UI COOLDOWN   */
-/* ===================== */
-
-function cooldownPct(name){
-  if(cooldown[name] <= 0) return 0;
-  return (cooldown[name] / cooldown.max[name]) * 100;
+/* HELPERS UI */
+function cooldownPct(key){
+  if(cooldown[key] <= 0) return 0;
+  return cooldown[key] / cooldownMax[key];
 }
 
 function btn(label, fn, key, ult=false){
+
   let pct = cooldownPct(key);
-  let disabled = (cooldown[key] > 0 || gameOver || !playerTurn);
+  let disabled = cooldown[key] > 0 || gameOver || !playerTurn;
 
   return `
   <button onclick="${fn}()" ${disabled?"disabled":""} class="${ult?'ult':''}">
-    <div class="cooldown-bar" style="transform:scaleX(${pct/100})"></div>
+    <div class="cooldown-fill" style="transform:scaleX(${pct})"></div>
     <span>${label}${cooldown[key]>0?` (${cooldown[key]})`:''}</span>
   </button>`;
 }
 
-/* ===== ATAQUES ===== */
-
+/* ===== KAEL ===== */
 function kael_double(){
   if(!playerTurn || cooldown.double || gameOver) return;
   cooldown.double=2;
@@ -321,20 +338,19 @@ function kael_ult(){
 }
 
 /* ===== RENDER ===== */
-
 function render(){
 
   let ultReady = round>=3 && cooldown.ult===0;
 
   if(player.name==="Kael"){
-    actions.innerHTML=
+    actions.innerHTML =
       btn("Dupla","kael_double","double") +
       btn("Fumaça","kael_smoke","smoke") +
       btn("Investida","kael_dash","dash") +
-      btn("ULT","kael_ult","ult",true).replace("disabled", ultReady?"":"disabled");
+      btn("ULT","kael_ult","ult",true);
   }
-
 }
+
 </script>
 
 </body>
