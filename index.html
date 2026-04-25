@@ -15,7 +15,7 @@ body {
 /* telas */
 #menu, #game { display: none; }
 
-/* 🔥 TODAS AS TELAS CENTRALIZADAS */
+/* centralização */
 .screen {
   display: flex;
   justify-content: center;
@@ -23,7 +23,7 @@ body {
   height: 100vh;
 }
 
-/* 🔥 CARD PADRÃO */
+/* card */
 .card-box {
   background: rgba(255,255,255,0.85);
   backdrop-filter: blur(10px);
@@ -41,7 +41,7 @@ body {
   margin-bottom: 25px;
 }
 
-/* botão */
+/* botão start */
 .start-btn {
   padding: 18px 40px;
   font-size: 18px;
@@ -78,12 +78,7 @@ body {
   transform: translateY(-5px);
 }
 
-/* 🔥 GAME CENTRALIZADO */
-#game.screen {
-  display: flex;
-}
-
-/* container batalha */
+/* batalha */
 .game-container {
   background: rgba(255,255,255,0.9);
   backdrop-filter: blur(12px);
@@ -138,6 +133,11 @@ button {
   background: white;
   cursor: pointer;
   box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+  transition: 0.15s;
+}
+
+button:active {
+  transform: scale(0.95);
 }
 
 button:disabled {
@@ -155,7 +155,9 @@ button:disabled {
   transform-origin: left;
 }
 
-/* animações */
+/* 🔥 ANIMAÇÕES */
+
+/* hit tremido */
 .hit {
   animation: hit 0.3s;
 }
@@ -166,6 +168,7 @@ button:disabled {
   100% { transform: translateX(0); }
 }
 
+/* texto sobe */
 .fade {
   animation: fadeUp 0.4s;
 }
@@ -173,6 +176,17 @@ button:disabled {
 @keyframes fadeUp {
   from { opacity:0; transform:translateY(10px); }
   to { opacity:1; transform:translateY(0); }
+}
+
+/* 🔥 NOVO: efeito de skill (flash) */
+.flash {
+  animation: flash 0.4s;
+}
+
+@keyframes flash {
+  0% { filter: brightness(1); }
+  50% { filter: brightness(2.5); }
+  100% { filter: brightness(1); }
 }
 
 </style>
@@ -210,7 +224,7 @@ button:disabled {
       <div class="bar-label" id="enemyLabel"></div>
     </div>
 
-    <div class="bar-container">
+    <div class="bar-container" id="playerBox">
       <div id="playerHp" class="bar player"></div>
       <div id="playerMana" class="bar"></div>
       <div class="bar-label" id="playerLabel"></div>
@@ -288,11 +302,9 @@ function update(){
 }
 
 function render(){
-
   let list = skills[player.id] || [];
 
   actions.innerHTML = list.map((s,i)=>{
-
     let disabled = cooldown[i]>0 || player.mana<s.cost;
 
     return `
@@ -315,13 +327,17 @@ function useSkill(i){
   let dmg = s.dmg * player.atk;
   enemy.hp -= dmg;
 
-  enemyBox.classList.add("hit");
-  setTimeout(()=>enemyBox.classList.remove("hit"),300);
+  // 🔥 efeito visual
+  enemyBox.classList.add("hit","flash");
+  setTimeout(()=>enemyBox.classList.remove("hit","flash"),300);
 
-  damageText.innerText = "Você causou "+dmg;
+  damageText.innerText = "💥 Você causou "+dmg;
+  damageText.classList.remove("fade");
+  void damageText.offsetWidth;
+  damageText.classList.add("fade");
 
   if(enemy.hp<=0){
-    return endGame("Você venceu!");
+    return endGame("🏆 Você venceu!");
   }
 
   update();
@@ -333,13 +349,13 @@ function enemyTurn(){
   let dmg = 8;
   player.hp -= dmg;
 
-  playerHp.classList.add("hit");
-  setTimeout(()=>playerHp.classList.remove("hit"),300);
+  playerBox.classList.add("hit","flash");
+  setTimeout(()=>playerBox.classList.remove("hit","flash"),300);
 
-  damageText.innerText = "Inimigo causou "+dmg;
+  damageText.innerText = "⚔️ Inimigo causou "+dmg;
 
   if(player.hp<=0){
-    return endGame("Você perdeu!");
+    return endGame("💀 Você perdeu!");
   }
 
   update();
