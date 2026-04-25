@@ -2,84 +2,59 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<title>Mini RPG</title>
+<title>Mini RPG Estável</title>
 
 <style>
 body {
   font-family: "Courier New", monospace;
   background: #fff;
-  color: #111;
   text-align: center;
 }
 
 button {
-  font-family: "Courier New", monospace;
-  background: #f2f2f2;
-  border: 2px solid #444;
   padding: 10px;
   margin: 5px;
+  border: 2px solid #444;
+  background: #eee;
   cursor: pointer;
 }
 
-button:hover { background: #ddd; }
-
 .hidden { display: none; }
-
-.box {
-  border: 2px solid #444;
-  padding: 10px;
-  margin: 10px;
-  display: inline-block;
-  width: 250px;
-}
 
 .bar-container {
   width: 300px;
-  margin: 10px auto;
   border: 2px solid #444;
-  background: #eee;
+  margin: 10px auto;
+  background: #ddd;
 }
 
 .bar {
   height: 18px;
-  width: 100%;
-  transition: 0.3s;
+  transition: 0.2s;
 }
 
-.playerBar { background: green; }
-.enemyBar { background: red; }
+.player { background: green; }
+.enemy { background: red; }
 </style>
 </head>
 
 <body>
 
-<!-- MENU -->
 <div id="menu">
-  <h1>🎮 Escolha seu personagem</h1>
-
-  <div class="box">
-    <h2>Kael 🔥</h2>
-    <button onclick="select('kael')">Selecionar</button>
-  </div>
-
-  <div class="box">
-    <h2>Lyra 🌪️</h2>
-    <button onclick="select('lyra')">Selecionar</button>
-  </div>
+  <h2>Escolha</h2>
+  <button onclick="select('kael')">Kael</button>
+  <button onclick="select('lyra')">Lyra</button>
 </div>
 
-<!-- GAME -->
 <div id="game" class="hidden">
-  <h1 id="name"></h1>
+  <h2 id="name"></h2>
 
-  <h3>Você</h3>
   <div class="bar-container">
-    <div id="playerHp" class="bar playerBar"></div>
+    <div id="playerHp" class="bar player"></div>
   </div>
 
-  <h3>Inimigo</h3>
   <div class="bar-container">
-    <div id="enemyHp" class="bar enemyBar"></div>
+    <div id="enemyHp" class="bar enemy"></div>
   </div>
 
   <p id="status"></p>
@@ -89,27 +64,244 @@ button:hover { background: #ddd; }
 
 <script>
 
-/* =========================
+/* ======================
    ESTADO
-========================= */
+====================== */
 
 let player = {};
 let enemy = { hp: 100 };
 
 let playerTurn = true;
 
-let kaelInvisible = false;
-let lyraShield = false;
+let invisible = false;
+let shield = false;
 
-/* =========================
-   SELEÇÃO
-========================= */
+/* ======================
+   SETUP
+====================== */
 
 function select(char) {
 
   if (char === "kael") {
-    player = {
-      name: "Kael",
-      hp: 100,
-      atk: 9,
-      mag
+    player = { name:"Kael", hp:100, atk:9, mag:4, speed:8 };
+  }
+
+  if (char === "lyra") {
+    player = { name:"Lyra", hp:100, atk:5, mag:7, speed:9 };
+  }
+
+  document.getElementById("menu").classList.add("hidden");
+  document.getElementById("game").classList.remove("hidden");
+
+  playerTurn = true;
+
+  start();
+}
+
+/* ======================
+   START
+====================== */
+
+function start() {
+  document.getElementById("name").innerText = player.name;
+  render();
+  update();
+}
+
+/* ======================
+   UI
+====================== */
+
+function clamp(v){
+  return Math.max(0, Math.min(100, v));
+}
+
+function update() {
+
+  player.hp = clamp(player.hp);
+  enemy.hp = clamp(enemy.hp);
+
+  document.getElementById("playerHp").style.width = player.hp + "%";
+  document.getElementById("enemyHp").style.width = enemy.hp + "%";
+
+  document.getElementById("status").innerText =
+    playerTurn ? "Sua vez ⚔️" : "Inimigo atacando 👾";
+}
+
+/* ======================
+   TURNOS
+====================== */
+
+function endTurn() {
+  playerTurn = false;
+  update();
+
+  setTimeout(enemyTurn, 700);
+}
+
+function enemyTurn() {
+
+  /* invisível bloqueia ataque */
+  if (invisible) {
+    invisible = false;
+    playerTurn = true;
+    update();
+    return;
+  }
+
+  let dmg = Math.floor(Math.random() * 10) + 5;
+
+  /* escudo reduz dano */
+  if (shield) {
+    dmg = Math.floor(dmg * 0.5);
+    shield = false;
+  }
+
+  player.hp -= dmg;
+
+  checkEnd();
+
+  playerTurn = true;
+  update();
+}
+
+/* ======================
+   KAEL
+====================== */
+
+function kael_double() {
+  if (!playerTurn) return;
+
+  enemy.hp -= Math.floor(player.atk * 0.7);
+  enemy.hp -= Math.floor(player.atk * 0.7);
+
+  finish();
+}
+
+function kael_smoke() {
+  if (!playerTurn) return;
+
+  invisible = true;
+
+  document.getElementById("status").innerText =
+    "Kael ficou invisível!";
+
+  finish(false);
+}
+
+function kael_dash() {
+  if (!playerTurn) return;
+
+  enemy.hp -= player.atk * 2;
+
+  finish();
+}
+
+function kael_ult() {
+  if (!playerTurn) return;
+
+  enemy.hp -= player.atk * 4;
+
+  finish();
+}
+
+/* ======================
+   LYRA
+====================== */
+
+function lyra_air() {
+  if (!playerTurn) return;
+
+  enemy.hp -= player.mag * 2;
+
+  finish();
+}
+
+function lyra_fly() {
+  if (!playerTurn) return;
+
+  enemy.hp -= player.atk * 2;
+
+  finish();
+}
+
+function lyra_shield() {
+  if (!playerTurn) return;
+
+  shield = true;
+
+  document.getElementById("status").innerText =
+    "Lyra ativou escudo de vento!";
+
+  finish(false);
+}
+
+function lyra_ult() {
+  if (!playerTurn) return;
+
+  enemy.hp -= player.mag * 5;
+
+  finish();
+}
+
+/* ======================
+   FINALIZA
+====================== */
+
+function finish(skip=true){
+  checkEnd();
+  update();
+
+  if (skip) endTurn();
+  else {
+    playerTurn = false;
+    setTimeout(enemyTurn, 700);
+  }
+}
+
+/* ======================
+   CHECK
+====================== */
+
+function checkEnd() {
+
+  if (enemy.hp <= 0) {
+    alert("Você venceu!");
+    location.reload();
+  }
+
+  if (player.hp <= 0) {
+    alert("Você perdeu!");
+    location.reload();
+  }
+}
+
+/* ======================
+   BOTÕES
+====================== */
+
+function render() {
+
+  if (player.name === "Kael") {
+    document.getElementById("actions").innerHTML = `
+      <button onclick="kael_double()">Duplo Corte</button>
+      <button onclick="kael_smoke()">Fumaça</button>
+      <button onclick="kael_dash()">Investida</button>
+      <button onclick="kael_ult()">Ultimate</button>
+    `;
+  }
+
+  if (player.name === "Lyra") {
+    document.getElementById("actions").innerHTML = `
+      <button onclick="lyra_air()">Sopro de Ar</button>
+      <button onclick="lyra_fly()">Voo Bravo</button>
+      <button onclick="lyra_shield()">Proteção</button>
+      <button onclick="lyra_ult()">Furacão</button>
+    `;
+  }
+}
+
+</script>
+
+</body>
+</html>
