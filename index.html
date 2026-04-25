@@ -39,6 +39,10 @@ body {
    GAME
 ====================== */
 
+#game {
+  display: none;
+}
+
 button {
   padding: 10px;
   margin: 5px;
@@ -61,11 +65,6 @@ button {
 
 .player { background: green; }
 .enemy { background: red; }
-
-/* 🔥 IMPORTANTE: começa escondido aqui */
-#game {
-  display: none;
-}
 </style>
 </head>
 
@@ -79,7 +78,6 @@ button {
   <h2>Escolha seu personagem</h2>
 
   <div class="character-grid">
-
     <div class="card" onclick="select('kael')">
       <h3>🔥 Kael</h3>
       <p>Assassino de fogo</p>
@@ -89,7 +87,6 @@ button {
       <h3>🌪️ Lyra</h3>
       <p>Manipuladora de ar</p>
     </div>
-
   </div>
 </div>
 
@@ -123,39 +120,34 @@ let player = {};
 let enemy = { hp: 100 };
 
 let playerTurn = true;
-
-let invisible = false;
-let shield = false;
-
 let round = 1;
+
+let shield = false;
 let skipEnemyTurn = false;
 
 /* ======================
-   SELEÇÃO (CORRIGIDA 100%)
+   START DO JOGO
 ====================== */
 
 function select(char) {
 
   if (char === "kael") {
-    player = { name:"Kael", hp:100, atk:9, mag:4, speed:8 };
+    player = { name:"Kael", hp:100, atk:9, mag:4 };
   }
 
   if (char === "lyra") {
-    player = { name:"Lyra", hp:100, atk:5, mag:7, speed:9 };
+    player = { name:"Lyra", hp:100, atk:5, mag:7 };
   }
 
+  // 🔥 troca de tela garantida
   document.getElementById("menu").style.display = "none";
   document.getElementById("game").style.display = "block";
 
-  playerTurn = true;
-
-  setTimeout(() => {
-    start();
-  }, 50);
+  start();
 }
 
 /* ======================
-   START
+   INICIALIZA
 ====================== */
 
 function start() {
@@ -193,21 +185,13 @@ function endTurn() {
   playerTurn = false;
   update();
 
-  setTimeout(enemyTurn, 700);
+  setTimeout(enemyTurn, 400);
 }
 
 function enemyTurn() {
 
   if (skipEnemyTurn) {
     skipEnemyTurn = false;
-    playerTurn = true;
-    round++;
-    update();
-    return;
-  }
-
-  if (invisible) {
-    invisible = false;
     playerTurn = true;
     round++;
     update();
@@ -223,114 +207,6 @@ function enemyTurn() {
 
   player.hp -= dmg;
 
-  checkEnd();
-
-  round++;
-
-  playerTurn = true;
-  update();
-}
-
-/* ======================
-   KAEL
-====================== */
-
-function kael_double() {
-  if (!playerTurn) return;
-
-  enemy.hp -= Math.floor(player.atk * 0.7);
-  enemy.hp -= Math.floor(player.atk * 0.7);
-
-  finish();
-}
-
-function kael_smoke() {
-  if (!playerTurn) return;
-
-  skipEnemyTurn = true;
-
-  document.getElementById("status").innerText =
-    "Kael usou fumaça! Inimigo perdeu a rodada.";
-
-  finish(false);
-}
-
-function kael_dash() {
-  if (!playerTurn) return;
-
-  enemy.hp -= player.atk * 2;
-
-  finish();
-}
-
-function kael_ult() {
-  if (!playerTurn) return;
-
-  enemy.hp -= player.atk * 4;
-
-  finish();
-}
-
-/* ======================
-   LYRA
-====================== */
-
-function lyra_air() {
-  if (!playerTurn) return;
-
-  enemy.hp -= player.mag * 2;
-
-  finish();
-}
-
-function lyra_fly() {
-  if (!playerTurn) return;
-
-  enemy.hp -= player.atk * 2;
-
-  finish();
-}
-
-function lyra_shield() {
-  if (!playerTurn) return;
-
-  shield = true;
-
-  document.getElementById("status").innerText =
-    "Lyra ativou escudo de vento!";
-
-  finish(false);
-}
-
-function lyra_ult() {
-  if (!playerTurn) return;
-
-  enemy.hp -= player.mag * 5;
-
-  finish();
-}
-
-/* ======================
-   FINAL
-====================== */
-
-function finish(skip=true){
-  checkEnd();
-  update();
-
-  if (skip) endTurn();
-  else {
-    playerTurn = false;
-    setTimeout(enemyTurn, 700);
-  }
-}
-
-/* ======================
-   CHECK
-====================== */
-
-function checkEnd() {
-
   if (enemy.hp <= 0) {
     alert("Você venceu!");
     location.reload();
@@ -340,6 +216,76 @@ function checkEnd() {
     alert("Você perdeu!");
     location.reload();
   }
+
+  round++;
+  playerTurn = true;
+  update();
+}
+
+/* ======================
+   AÇÕES KAEL
+====================== */
+
+function kael_double() {
+  if (!playerTurn) return;
+
+  enemy.hp -= player.atk * 0.7;
+  enemy.hp -= player.atk * 0.7;
+
+  endTurn();
+}
+
+function kael_smoke() {
+  if (!playerTurn) return;
+
+  skipEnemyTurn = true;
+  endTurn();
+}
+
+function kael_dash() {
+  if (!playerTurn) return;
+
+  enemy.hp -= player.atk * 2;
+  endTurn();
+}
+
+function kael_ult() {
+  if (!playerTurn) return;
+
+  enemy.hp -= player.atk * 4;
+  endTurn();
+}
+
+/* ======================
+   AÇÕES LYRA
+====================== */
+
+function lyra_air() {
+  if (!playerTurn) return;
+
+  enemy.hp -= player.mag * 2;
+  endTurn();
+}
+
+function lyra_fly() {
+  if (!playerTurn) return;
+
+  enemy.hp -= player.atk * 2;
+  endTurn();
+}
+
+function lyra_shield() {
+  if (!playerTurn) return;
+
+  shield = true;
+  endTurn();
+}
+
+function lyra_ult() {
+  if (!playerTurn) return;
+
+  enemy.hp -= player.mag * 5;
+  endTurn();
 }
 
 /* ======================
@@ -350,19 +296,19 @@ function render() {
 
   if (player.name === "Kael") {
     document.getElementById("actions").innerHTML = `
-      <button onclick="kael_double()">Duplo Corte Flamejante</button>
-      <button onclick="kael_smoke()">Bomba de Fumaça</button>
-      <button onclick="kael_dash()">Investida Fatal</button>
-      <button onclick="kael_ult()">Fatalidade em Chamas</button>
+      <button onclick="kael_double()">Duplo Corte</button>
+      <button onclick="kael_smoke()">Fumaça</button>
+      <button onclick="kael_dash()">Investida</button>
+      <button onclick="kael_ult()">Ultimate</button>
     `;
   }
 
   if (player.name === "Lyra") {
     document.getElementById("actions").innerHTML = `
       <button onclick="lyra_air()">Sopro de Ar</button>
-      <button onclick="lyra_fly()">Voo Bravo</button>
-      <button onclick="lyra_shield()">Proteção de Ventosa</button>
-      <button onclick="lyra_ult()">Furacão 2000</button>
+      <button onclick="lyra_fly()">Voo</button>
+      <button onclick="lyra_shield()">Proteção</button>
+      <button onclick="lyra_ult()">Furacão</button>
     `;
   }
 }
