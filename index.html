@@ -100,6 +100,10 @@ button:disabled {
     <div class="card" onclick="select('lyra')">
       <h3>🌪️ Lyra</h3>
     </div>
+
+    <div class="card" onclick="select('dopamina')">
+      <h3>✨ Dopamina</h3>
+    </div>
   </div>
 </div>
 
@@ -122,17 +126,12 @@ button:disabled {
 
 <script>
 
-/* ======================
-   START
-====================== */
 function startGame() {
   document.getElementById("startScreen").style.display = "none";
   document.getElementById("menu").style.display = "block";
 }
 
-/* ======================
-   STATE
-====================== */
+/* STATE */
 let player = {};
 let enemy = { hp: 100 };
 
@@ -141,9 +140,9 @@ let round = 1;
 let gameOver = false;
 
 let shield = false;
+let skipEnemyTurn = false;
 let acting = false;
 
-/* cooldowns */
 let cooldown = {
   double: 0,
   smoke: 0,
@@ -151,13 +150,19 @@ let cooldown = {
   ult: 0
 };
 
-/* ======================
-   SELECT
-====================== */
 function select(char) {
-  player = (char === "kael")
-    ? { name:"Kael", hp:100, atk:9, mag:4 }
-    : { name:"Lyra", hp:100, atk:5, mag:7 };
+
+  if (char === "kael") {
+    player = { name:"Kael", hp:100, atk:9, mag:4 };
+  }
+
+  if (char === "lyra") {
+    player = { name:"Lyra", hp:100, atk:5, mag:7 };
+  }
+
+  if (char === "dopamina") {
+    player = { name:"Dopamina", hp:100, atk:8, mag:8 };
+  }
 
   document.getElementById("menu").style.display = "none";
   document.getElementById("game").style.display = "block";
@@ -171,52 +176,33 @@ function start() {
   render();
 }
 
-/* ======================
-   HELPERS
-====================== */
-function clamp(v){
-  return Math.max(0, Math.min(100, v));
-}
+/* UTILS */
+function clamp(v){ return Math.max(0, Math.min(100, v)); }
+function delay(ms){ return new Promise(r => setTimeout(r, ms)); }
+function showDamage(t){ document.getElementById("damageText").innerText = t; }
 
-function delay(ms){
-  return new Promise(r => setTimeout(r, ms));
-}
-
-function showDamage(t){
-  document.getElementById("damageText").innerText = t;
-}
-
-/* ======================
-   GAME OVER
-====================== */
 function checkGameOver() {
+
   if (enemy.hp <= 0) {
     gameOver = true;
-    enemy.hp = 0;
-    update();
-    setTimeout(() => alert("Você venceu!"), 300);
+    alert("Você venceu!");
+    location.reload();
   }
 
   if (player.hp <= 0) {
     gameOver = true;
-    player.hp = 0;
-    update();
-    setTimeout(() => alert("Você perdeu!"), 300);
+    alert("Você perdeu!");
+    location.reload();
   }
 }
 
-/* ======================
-   COOLDOWN
-====================== */
+/* COOLDOWN */
 function tickCooldowns(){
   for (let k in cooldown){
     if (cooldown[k] > 0) cooldown[k]--;
   }
 }
 
-/* ======================
-   UPDATE
-====================== */
 function update() {
 
   if (gameOver) return;
@@ -231,23 +217,16 @@ function update() {
     `Rodada ${round} | ${playerTurn ? "Sua vez ⚔️" : "Inimigo..."}`;
 
   tickCooldowns();
-  render();
 }
 
-/* ======================
-   TURN SYSTEM
-====================== */
+/* TURN */
 function endTurn() {
   playerTurn = false;
   update();
-
-  setTimeout(enemyTurn, 1400);
+  setTimeout(enemyTurn, 1500);
 }
 
-/* inimigo */
 async function enemyTurn() {
-
-  if (gameOver) return;
 
   let dmg = Math.floor(Math.random() * 10) + 5;
 
@@ -259,179 +238,232 @@ async function enemyTurn() {
   player.hp -= dmg;
 
   showDamage(`Inimigo causou ${dmg}`);
+
   checkGameOver();
 
-  await delay(1400);
+  await delay(1500);
 
   round++;
   playerTurn = true;
   update();
 }
 
-/* trava ação */
-function canAct(cd){
-  return playerTurn && !gameOver && !acting && cooldown[cd] === 0;
-}
-
 /* ======================
    KAEL
 ====================== */
-async function kael_double() {
-  if (!canAct("double")) return;
 
-  acting = true;
+async function kael_double(){
+  if (!playerTurn || cooldown.double > 0) return;
+
   cooldown.double = 2;
 
-  let dmg = Math.floor(player.atk * 1.4);
+  let dmg = player.atk * 2;
   enemy.hp -= dmg;
 
-  showDamage(`Kael causou ${dmg}`);
+  showDamage(`Dupla de cortes flamejante: ${dmg}`);
+
   update();
-
   await delay(1500);
-
-  acting = false;
   endTurn();
 }
 
-async function kael_smoke() {
-  if (!canAct("smoke")) return;
+async function kael_smoke(){
+  if (!playerTurn || cooldown.smoke > 0) return;
 
-  acting = true;
   cooldown.smoke = 3;
   skipEnemyTurn = true;
 
-  showDamage("Kael usou fumaça!");
-  update();
+  showDamage("Bomba de fumaça!");
 
   await delay(1500);
-
-  acting = false;
   endTurn();
 }
 
-async function kael_dash() {
-  if (!canAct("dash")) return;
+async function kael_dash(){
+  if (!playerTurn || cooldown.dash > 0) return;
 
-  acting = true;
   cooldown.dash = 2;
 
   let dmg = player.atk * 2;
   enemy.hp -= dmg;
 
-  showDamage(`Kael causou ${dmg}`);
+  showDamage(`Investida fatal: ${dmg}`);
+
   update();
-
   await delay(1500);
-
-  acting = false;
   endTurn();
 }
 
-async function kael_ult() {
-  if (!playerTurn || round < 3 || cooldown.ult > 0 || acting) return;
+async function kael_ult(){
+  if (!playerTurn || round < 3 || cooldown.ult > 0) return;
 
-  acting = true;
   cooldown.ult = 5;
 
   let dmg = player.atk * 4;
   enemy.hp -= dmg;
 
-  showDamage(`ULTIMATE! ${dmg}`);
+  showDamage(`FATALIDADE EM CHAMAS: ${dmg}`);
+
   update();
-
   await delay(1800);
-
-  acting = false;
   endTurn();
 }
 
 /* ======================
    LYRA
 ====================== */
-async function lyra_air() {
-  if (!canAct("double")) return;
 
-  acting = true;
+async function lyra_air(){
+  if (!playerTurn || cooldown.double > 0) return;
+
   cooldown.double = 2;
 
   let dmg = player.mag * 2;
   enemy.hp -= dmg;
 
-  showDamage(`Lyra causou ${dmg}`);
+  showDamage(`Sopro de ar: ${dmg}`);
+
   update();
-
   await delay(1500);
-
-  acting = false;
   endTurn();
 }
 
-async function lyra_fly() {
-  if (!canAct("dash")) return;
+async function lyra_fly(){
+  if (!playerTurn || cooldown.dash > 0) return;
 
-  acting = true;
   cooldown.dash = 2;
 
   let dmg = player.atk * 2;
   enemy.hp -= dmg;
 
-  showDamage(`Lyra atacou ${dmg}`);
+  showDamage(`Voo bravo: ${dmg}`);
+
   update();
-
   await delay(1500);
-
-  acting = false;
   endTurn();
 }
 
-async function lyra_shield() {
-  if (!canAct("smoke")) return;
+async function lyra_shield(){
+  if (!playerTurn || cooldown.smoke > 0) return;
 
-  acting = true;
   cooldown.smoke = 3;
   shield = true;
 
-  showDamage("Lyra ativou proteção");
+  showDamage("Proteção de ventosa");
+
   update();
-
   await delay(1500);
-
-  acting = false;
   endTurn();
 }
 
-async function lyra_ult() {
-  if (!playerTurn || round < 3 || cooldown.ult > 0 || acting) return;
+async function lyra_ult(){
+  if (!playerTurn || round < 3 || cooldown.ult > 0) return;
 
-  acting = true;
   cooldown.ult = 5;
 
   let dmg = player.mag * 5;
   enemy.hp -= dmg;
 
-  showDamage(`FURACÃO! ${dmg}`);
+  showDamage(`FURACÃO 2000: ${dmg}`);
+
   update();
-
   await delay(1800);
-
-  acting = false;
   endTurn();
 }
 
 /* ======================
-   RENDER BUTTONS
+   DOPAMINA
 ====================== */
+
+async function dopamina_pisa(){
+  if (!playerTurn || cooldown.double > 0) return;
+
+  cooldown.double = 2;
+
+  let dmg = player.atk * 2;
+  enemy.hp -= dmg;
+
+  showDamage(`Pisa menos!: ${dmg}`);
+
+  update();
+  await delay(1500);
+  endTurn();
+}
+
+async function dopamina_lacre(){
+  if (!playerTurn || cooldown.dash > 0) return;
+
+  cooldown.dash = 2;
+
+  let dmg = player.mag * 2;
+  enemy.hp -= dmg;
+
+  showDamage(`Lacre agudo: ${dmg}`);
+
+  update();
+  await delay(1500);
+  endTurn();
+}
+
+async function dopamina_shantay(){
+  if (!playerTurn || cooldown.smoke > 0) return;
+
+  cooldown.smoke = 3;
+  shield = true;
+
+  showDamage("Shantay, I stay");
+
+  update();
+  await delay(1500);
+  endTurn();
+}
+
+async function dopamina_ult(){
+  if (!playerTurn || round < 3 || cooldown.ult > 0) return;
+
+  cooldown.ult = 5;
+
+  let dmg = player.mag * 6;
+  enemy.hp -= dmg;
+
+  showDamage(`SASHAY, AWAY: ${dmg}`);
+
+  update();
+  await delay(1800);
+  endTurn();
+}
+
+/* RENDER */
 function render() {
 
   let ultReady = round >= 3 && cooldown.ult === 0;
 
-  document.getElementById("actions").innerHTML = `
-    <button onclick="kael_double()" ${cooldown.double? "disabled":""}>Duplo</button>
-    <button onclick="kael_smoke()" ${cooldown.smoke? "disabled":""}>Fumaça</button>
-    <button onclick="kael_dash()" ${cooldown.dash? "disabled":""}>Dash</button>
-    <button onclick="kael_ult()" ${!ultReady? "disabled":""}>ULT</button>
-  `;
+  if (player.name === "Kael") {
+    document.getElementById("actions").innerHTML = `
+      <button onclick="kael_double()">Dupla de cortes flamejante</button>
+      <button onclick="kael_smoke()">Bomba de fumaça</button>
+      <button onclick="kael_dash()">Investida fatal</button>
+      <button onclick="kael_ult()" ${!ultReady?'disabled':''}>Fatalidade em chamas</button>
+    `;
+  }
+
+  if (player.name === "Lyra") {
+    document.getElementById("actions").innerHTML = `
+      <button onclick="lyra_air()">Sopro de ar</button>
+      <button onclick="lyra_fly()">Voo bravo</button>
+      <button onclick="lyra_shield()">Proteção de ventosa</button>
+      <button onclick="lyra_ult()" ${!ultReady?'disabled':''}>Furacão 2000</button>
+    `;
+  }
+
+  if (player.name === "Dopamina") {
+    document.getElementById("actions").innerHTML = `
+      <button onclick="dopamina_pisa()">Pisa menos!</button>
+      <button onclick="dopamina_lacre()">Lacre agudo</button>
+      <button onclick="dopamina_shantay()">Shantay, I stay</button>
+      <button onclick="dopamina_ult()" ${!ultReady?'disabled':''}>Sashay, away</button>
+    `;
+  }
 }
 
 </script>
