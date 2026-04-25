@@ -31,7 +31,7 @@ body {
 }
 
 .card {
-  width: 200px;
+  width: 220px;
   border: 3px solid #444;
   padding: 25px;
   cursor: pointer;
@@ -46,12 +46,12 @@ body {
 
 /* BOTÕES */
 button {
-  padding: 15px 20px;
-  margin: 8px;
+  padding: 18px 25px;
+  margin: 10px;
   border: 2px solid #444;
   cursor: pointer;
   font-size: 16px;
-  min-width: 140px;
+  min-width: 160px;
 }
 
 button:disabled {
@@ -60,14 +60,15 @@ button:disabled {
 
 /* BARRAS */
 .bar-container {
-  width: 320px;
+  width: 340px;
   border: 2px solid #444;
   margin: 10px auto;
   position: relative;
 }
 
 .bar {
-  height: 22px;
+  height: 24px;
+  transition: 0.3s;
 }
 
 .player { background: green; }
@@ -168,7 +169,7 @@ function checkGameOver(){
   if(enemy.hp <= 0){
     enemy.hp = 0;
     gameOver = true;
-    update();
+    update(); // 🔥 força atualizar barra antes do alert
     setTimeout(()=>alert("Você venceu!"),300);
     return true;
   }
@@ -186,8 +187,6 @@ function checkGameOver(){
 
 function update(){
 
-  if(gameOver) return;
-
   player.hp = clamp(player.hp);
   enemy.hp = clamp(enemy.hp);
 
@@ -197,22 +196,23 @@ function update(){
   playerLabel.innerText = player.name + " ("+player.hp+"%)";
   enemyLabel.innerText = "Inimigo ("+enemy.hp+"%)";
 
-  status.innerText = `Rodada ${round} | ${playerTurn?"Sua vez ⚔️":"Inimigo..."}`;
-
-  for(let k in cooldown){
-    if(cooldown[k]>0) cooldown[k]--;
-  }
+  status.innerText = gameOver
+    ? "Fim de jogo"
+    : `Rodada ${round} | ${playerTurn?"Sua vez ⚔️":"Inimigo..."}`;
 
   render();
 }
 
 function endTurn(){
+  if(gameOver) return;
   playerTurn=false;
   update();
   setTimeout(enemyTurn,1200);
 }
 
 async function enemyTurn(){
+
+  if(gameOver) return;
 
   if(skipEnemyTurn){
     skipEnemyTurn=false;
@@ -243,7 +243,7 @@ async function enemyTurn(){
 
 /* ===== KAEL ===== */
 function kael_double(){
-  if(!playerTurn || cooldown.double) return;
+  if(!playerTurn || cooldown.double || gameOver) return;
   cooldown.double=2;
   enemy.hp -= player.atk*2;
   damageText.innerText="Dupla flamejante";
@@ -252,7 +252,7 @@ function kael_double(){
 }
 
 function kael_smoke(){
-  if(!playerTurn || cooldown.smoke) return;
+  if(!playerTurn || cooldown.smoke || gameOver) return;
   cooldown.smoke=3;
   skipEnemyTurn=true;
   damageText.innerText="Fumaça";
@@ -260,7 +260,7 @@ function kael_smoke(){
 }
 
 function kael_dash(){
-  if(!playerTurn || cooldown.dash) return;
+  if(!playerTurn || cooldown.dash || gameOver) return;
   cooldown.dash=2;
   enemy.hp -= player.atk*2;
   damageText.innerText="Investida";
@@ -269,7 +269,7 @@ function kael_dash(){
 }
 
 function kael_ult(){
-  if(!playerTurn || round<3 || cooldown.ult) return;
+  if(!playerTurn || round<3 || cooldown.ult || gameOver) return;
   cooldown.ult=5;
   enemy.hp -= player.atk*4;
   damageText.innerText="FATALIDADE";
@@ -279,7 +279,7 @@ function kael_ult(){
 
 /* ===== LYRA ===== */
 function lyra_air(){
-  if(!playerTurn || cooldown.double) return;
+  if(!playerTurn || cooldown.double || gameOver) return;
   cooldown.double=2;
   enemy.hp -= player.mag*2;
   damageText.innerText="Sopro de ar";
@@ -288,7 +288,7 @@ function lyra_air(){
 }
 
 function lyra_fly(){
-  if(!playerTurn || cooldown.dash) return;
+  if(!playerTurn || cooldown.dash || gameOver) return;
   cooldown.dash=2;
   enemy.hp -= player.atk*2;
   damageText.innerText="Voo bravo";
@@ -297,7 +297,7 @@ function lyra_fly(){
 }
 
 function lyra_shield(){
-  if(!playerTurn || cooldown.smoke) return;
+  if(!playerTurn || cooldown.smoke || gameOver) return;
   cooldown.smoke=3;
   shield=true;
   damageText.innerText="Proteção";
@@ -305,7 +305,7 @@ function lyra_shield(){
 }
 
 function lyra_ult(){
-  if(!playerTurn || round<3 || cooldown.ult) return;
+  if(!playerTurn || round<3 || cooldown.ult || gameOver) return;
   cooldown.ult=5;
   enemy.hp -= player.mag*5;
   damageText.innerText="Furacão";
@@ -315,7 +315,7 @@ function lyra_ult(){
 
 /* ===== DOPAMINA ===== */
 function dopamina_pisa(){
-  if(!playerTurn || cooldown.double) return;
+  if(!playerTurn || cooldown.double || gameOver) return;
   cooldown.double=2;
   enemy.hp -= player.atk*2;
   damageText.innerText="Pisa menos!";
@@ -324,7 +324,7 @@ function dopamina_pisa(){
 }
 
 function dopamina_lacre(){
-  if(!playerTurn || cooldown.dash) return;
+  if(!playerTurn || cooldown.dash || gameOver) return;
   cooldown.dash=2;
   enemy.hp -= player.mag*2;
   damageText.innerText="Lacre agudo";
@@ -333,7 +333,7 @@ function dopamina_lacre(){
 }
 
 function dopamina_shantay(){
-  if(!playerTurn || cooldown.smoke) return;
+  if(!playerTurn || cooldown.smoke || gameOver) return;
   cooldown.smoke=3;
   shield=true;
   damageText.innerText="Shantay!";
@@ -341,7 +341,7 @@ function dopamina_shantay(){
 }
 
 function dopamina_ult(){
-  if(!playerTurn || round<3 || cooldown.ult) return;
+  if(!playerTurn || round<3 || cooldown.ult || gameOver) return;
   cooldown.ult=5;
   enemy.hp -= player.mag*6;
   damageText.innerText="Sashay away!";
