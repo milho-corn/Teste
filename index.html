@@ -1,113 +1,13 @@
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-<meta charset="UTF-8">
-<title>Mini RPG</title>
-
-<style>
-body {
-  font-family: "Courier New", monospace;
-  background: #111;
-  color: #fff;
-  text-align: center;
-}
-
-button {
-  font-family: "Courier New", monospace;
-  background: #222;
-  color: #fff;
-  border: 2px solid #555;
-  padding: 10px;
-  margin: 5px;
-  cursor: pointer;
-}
-
-button:hover {
-  background: #333;
-}
-
-.box {
-  border: 2px solid #444;
-  padding: 15px;
-  margin: 10px;
-  display: inline-block;
-  width: 250px;
-}
-
-.hidden {
-  display: none;
-}
-
-/* BARRAS */
-.bar-container {
-  width: 300px;
-  margin: 10px auto;
-  border: 2px solid #444;
-  background: #222;
-}
-
-.hp-bar {
-  height: 18px;
-  width: 100%;
-  transition: 0.3s;
-}
-
-.player {
-  background: linear-gradient(90deg, limegreen, green);
-}
-
-.enemy {
-  background: linear-gradient(90deg, red, darkred);
-}
-</style>
-</head>
-
-<body>
-
-<!-- MENU -->
-<div id="menu">
-  <h1>🎮 Escolha seu personagem</h1>
-
-  <div class="box">
-    <h2>Kael 🔥</h2>
-    <p>Assassino de fogo</p>
-    <button onclick="selectChar('kael')">Selecionar</button>
-  </div>
-
-  <div class="box">
-    <h2>Lyra 🌪️</h2>
-    <p>Manipuladora de ar</p>
-    <button onclick="selectChar('lyra')">Selecionar</button>
-  </div>
-</div>
-
-<!-- GAME -->
-<div id="game" class="hidden">
-  <h1 id="charName"></h1>
-
-  <!-- PLAYER HP -->
-  <h3>Seu HP</h3>
-  <div class="bar-container">
-    <div id="playerHpBar" class="hp-bar player"></div>
-  </div>
-
-  <!-- ENEMY HP -->
-  <h3>Inimigo HP</h3>
-  <div class="bar-container">
-    <div id="enemyHpBar" class="hp-bar enemy"></div>
-  </div>
-
-  <p id="status"></p>
-
-  <h3>Ações</h3>
-  <div id="actions"></div>
-</div>
-
-<script>
-
 let player = {};
-let enemyHP = 100;
+let enemy = {
+  hp: 100,
+  speed: 6
+};
 
+let enemySkip = false;
+let playerTurn = true;
+
+/* PERSONAGENS */
 function selectChar(char) {
 
   if (char === "kael") {
@@ -116,7 +16,7 @@ function selectChar(char) {
       hp: 100,
       atk: 9,
       mag: 4,
-      def: 5
+      speed: 8
     };
   }
 
@@ -126,7 +26,7 @@ function selectChar(char) {
       hp: 100,
       atk: 5,
       mag: 7,
-      def: 5
+      speed: 9
     };
   }
 
@@ -138,89 +38,122 @@ function selectChar(char) {
 
 function startGame() {
   document.getElementById("charName").innerText = player.name;
+
+  // quem começa?
+  playerTurn = player.speed >= enemy.speed;
+
   updateUI();
   renderActions();
 }
 
+/* ATUALIZA UI */
 function updateUI() {
-
   document.getElementById("playerHpBar").style.width = player.hp + "%";
-  document.getElementById("enemyHpBar").style.width = enemyHP + "%";
+  document.getElementById("enemyHpBar").style.width = enemy.hp + "%";
 
   document.getElementById("status").innerText =
-    "Seu HP: " + player.hp + " | Inimigo HP: " + enemyHP;
+    (playerTurn ? "Sua vez ⚔️" : "Vez do inimigo 👾") +
+    " | Seu HP: " + player.hp +
+    " | Inimigo HP: " + enemy.hp;
 }
 
-function renderActions() {
-  let html = "";
+/* CONTROLE DE TURNOS */
+function nextTurn() {
+  playerTurn = !playerTurn;
 
-  if (player.name === "Kael") {
-    html += `<button onclick="attack()">Investida Fatal</button>`;
-    html += `<button onclick="smoke()">Bomba de Fumaça</button>`;
-    html += `<button onclick="ultimateKael()">Fatalidade em Chamas</button>`;
+  if (!playerTurn) {
+    setTimeout(enemyTurn, 600);
   }
-
-  if (player.name === "Lyra") {
-    html += `<button onclick="windAttack()">Sopro de Ar</button>`;
-    html += `<button onclick="defense()">Proteção de Ventosa</button>`;
-    html += `<button onclick="ultimateLyra()">Furacão 2000</button>`;
-  }
-
-  document.getElementById("actions").innerHTML = html;
 }
 
-/* KAEL */
-function attack() {
-  enemyHP -= player.atk * 2;
-  enemyTurn();
+/* AÇÕES KAEL */
+function doubleSlash() {
+  if (!playerTurn) return;
+
+  enemy.hp -= player.atk * 2;
+  enemy.hp -= player.atk * 2;
+
   updateUI();
+  checkEnd();
+  nextTurn();
 }
 
 function smoke() {
-  document.getElementById("status").innerText = "Kael ficou invisível!";
+  if (!playerTurn) return;
+
+  enemySkip = true;
+  document.getElementById("status").innerText =
+    "Kael ficou invisível!";
+
+  nextTurn();
 }
 
 function ultimateKael() {
-  enemyHP -= player.atk * 4;
-  enemyTurn();
+  if (!playerTurn) return;
+
+  enemy.hp -= player.atk * 5;
+
   updateUI();
+  checkEnd();
+  nextTurn();
 }
 
-/* LYRA */
+/* AÇÕES LYRA */
 function windAttack() {
-  enemyHP -= player.mag * 2;
-  enemyTurn();
+  if (!playerTurn) return;
+
+  enemy.hp -= player.mag * 2;
+
   updateUI();
+  checkEnd();
+  nextTurn();
 }
 
-function defense() {
-  player.hp += 10;
+function shield() {
+  if (!playerTurn) return;
+
+  player.hp += 15;
+
   updateUI();
+  nextTurn();
 }
 
 function ultimateLyra() {
-  enemyHP -= player.mag * 5;
-  enemyTurn();
+  if (!playerTurn) return;
+
+  enemy.hp -= player.mag * 6;
+
   updateUI();
+  checkEnd();
+  nextTurn();
 }
 
 /* INIMIGO */
 function enemyTurn() {
+
+  if (enemySkip) {
+    enemySkip = false;
+    playerTurn = true;
+    return;
+  }
+
   let dmg = Math.floor(Math.random() * 10) + 5;
   player.hp -= dmg;
 
+  checkEnd();
+  playerTurn = true;
+  updateUI();
+}
+
+/* FIM DE JOGO */
+function checkEnd() {
   if (player.hp <= 0) {
     alert("Você perdeu!");
     location.reload();
   }
 
-  if (enemyHP <= 0) {
+  if (enemy.hp <= 0) {
     alert("Você venceu!");
     location.reload();
   }
 }
-
-</script>
-
-</body>
-</html>
