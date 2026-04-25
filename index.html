@@ -1,12 +1,19 @@
-<!DOCTYPE html><html lang="pt-BR">
+<!DOCTYPE html>
+<html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<title>Mini RPG Estável</title><style>
+<title>Mini RPG Estável</title>
+
+<style>
 body {
-  font-family: "Courier New", monospace;
+  font-family: Arial, sans-serif;
   background: #fff;
   text-align: center;
 }
+
+/* TELAS */
+#menu { display: none; }
+#game { display: none; }
 
 #startScreen {
   display: flex;
@@ -15,65 +22,113 @@ body {
   height: 100vh;
 }
 
-#menu { display: none; }
-#game { display: none; }
-
+/* PERSONAGENS */
 .character-grid {
   display: flex;
   justify-content: center;
-  gap: 20px;
+  gap: 30px;
   margin-top: 40px;
 }
 
 .card {
-  width: 180px;
+  width: 200px;
   border: 3px solid #444;
-  padding: 15px;
+  padding: 25px;
   cursor: pointer;
+  font-size: 20px;
+  transition: 0.2s;
 }
 
+.card:hover {
+  background: #eee;
+  transform: scale(1.05);
+}
+
+/* BOTÕES */
 button {
-  padding: 10px;
-  margin: 5px;
+  padding: 15px 20px;
+  margin: 8px;
   border: 2px solid #444;
   cursor: pointer;
+  font-size: 16px;
+  min-width: 140px;
 }
 
 button:disabled {
   opacity: 0.4;
 }
 
+/* BARRAS */
 .bar-container {
-  width: 300px;
+  width: 320px;
   border: 2px solid #444;
   margin: 10px auto;
+  position: relative;
 }
 
 .bar {
-  height: 18px;
+  height: 22px;
 }
 
 .player { background: green; }
 .enemy { background: red; }
-</style></head><body><div id="startScreen">
+
+/* NOME NA BARRA */
+.bar-label {
+  position: absolute;
+  width: 100%;
+  top: 0;
+  left: 0;
+  font-size: 14px;
+  color: white;
+  font-weight: bold;
+  text-shadow: 1px 1px 2px black;
+}
+
+/* TEXTO */
+#damageText {
+  font-weight: bold;
+  margin-top: 10px;
+}
+</style>
+</head>
+
+<body>
+
+<div id="startScreen">
   <h1>Mini RPG</h1>
   <button onclick="startGame()">START</button>
-</div><div id="menu">
+</div>
+
+<div id="menu">
   <h2>Escolha</h2>
   <div class="character-grid">
     <div class="card" onclick="select('kael')">🔥 Kael</div>
     <div class="card" onclick="select('lyra')">🌪️ Lyra</div>
     <div class="card" onclick="select('dopamina')">✨ Dopamina</div>
   </div>
-</div><div id="game">
-  <h2 id="name"></h2>  <div class="bar-container">
+</div>
+
+<div id="game">
+  <h2 id="name"></h2>
+
+  <div class="bar-container">
     <div id="playerHp" class="bar player"></div>
-  </div>  <div class="bar-container">
+    <div class="bar-label" id="playerLabel"></div>
+  </div>
+
+  <div class="bar-container">
     <div id="enemyHp" class="bar enemy"></div>
-  </div>  <p id="status"></p>
+    <div class="bar-label" id="enemyLabel">Inimigo</div>
+  </div>
+
+  <p id="status"></p>
   <p id="damageText"></p>
+
   <div id="actions"></div>
-</div><script>
+</div>
+
+<script>
 
 let player = {};
 let enemy = { hp: 100 };
@@ -107,7 +162,31 @@ function select(char){
 function clamp(v){ return Math.max(0,Math.min(100,v)); }
 function delay(ms){ return new Promise(r=>setTimeout(r,ms)); }
 
+/* GAME OVER */
+function checkGameOver(){
+
+  if(enemy.hp <= 0){
+    enemy.hp = 0;
+    gameOver = true;
+    update();
+    setTimeout(()=>alert("Você venceu!"),300);
+    return true;
+  }
+
+  if(player.hp <= 0){
+    player.hp = 0;
+    gameOver = true;
+    update();
+    setTimeout(()=>alert("Você perdeu!"),300);
+    return true;
+  }
+
+  return false;
+}
+
 function update(){
+
+  if(gameOver) return;
 
   player.hp = clamp(player.hp);
   enemy.hp = clamp(enemy.hp);
@@ -115,7 +194,10 @@ function update(){
   playerHp.style.width = player.hp+"%";
   enemyHp.style.width = enemy.hp+"%";
 
-  status.innerText = `Rodada ${round} | ${playerTurn?"Sua vez":"Inimigo"}`;
+  playerLabel.innerText = player.name + " ("+player.hp+"%)";
+  enemyLabel.innerText = "Inimigo ("+enemy.hp+"%)";
+
+  status.innerText = `Rodada ${round} | ${playerTurn?"Sua vez ⚔️":"Inimigo..."}`;
 
   for(let k in cooldown){
     if(cooldown[k]>0) cooldown[k]--;
@@ -148,7 +230,9 @@ async function enemyTurn(){
   }
 
   player.hp -= dmg;
-  damageText.innerText = "Inimigo: "+dmg;
+  damageText.innerText = "Inimigo causou "+dmg;
+
+  if(checkGameOver()) return;
 
   await delay(1200);
 
@@ -163,6 +247,7 @@ function kael_double(){
   cooldown.double=2;
   enemy.hp -= player.atk*2;
   damageText.innerText="Dupla flamejante";
+  if(checkGameOver()) return;
   endTurn();
 }
 
@@ -179,6 +264,7 @@ function kael_dash(){
   cooldown.dash=2;
   enemy.hp -= player.atk*2;
   damageText.innerText="Investida";
+  if(checkGameOver()) return;
   endTurn();
 }
 
@@ -187,6 +273,7 @@ function kael_ult(){
   cooldown.ult=5;
   enemy.hp -= player.atk*4;
   damageText.innerText="FATALIDADE";
+  if(checkGameOver()) return;
   endTurn();
 }
 
@@ -196,6 +283,7 @@ function lyra_air(){
   cooldown.double=2;
   enemy.hp -= player.mag*2;
   damageText.innerText="Sopro de ar";
+  if(checkGameOver()) return;
   endTurn();
 }
 
@@ -204,6 +292,7 @@ function lyra_fly(){
   cooldown.dash=2;
   enemy.hp -= player.atk*2;
   damageText.innerText="Voo bravo";
+  if(checkGameOver()) return;
   endTurn();
 }
 
@@ -220,6 +309,7 @@ function lyra_ult(){
   cooldown.ult=5;
   enemy.hp -= player.mag*5;
   damageText.innerText="Furacão";
+  if(checkGameOver()) return;
   endTurn();
 }
 
@@ -229,6 +319,7 @@ function dopamina_pisa(){
   cooldown.double=2;
   enemy.hp -= player.atk*2;
   damageText.innerText="Pisa menos!";
+  if(checkGameOver()) return;
   endTurn();
 }
 
@@ -237,6 +328,7 @@ function dopamina_lacre(){
   cooldown.dash=2;
   enemy.hp -= player.mag*2;
   damageText.innerText="Lacre agudo";
+  if(checkGameOver()) return;
   endTurn();
 }
 
@@ -253,9 +345,11 @@ function dopamina_ult(){
   cooldown.ult=5;
   enemy.hp -= player.mag*6;
   damageText.innerText="Sashay away!";
+  if(checkGameOver()) return;
   endTurn();
 }
 
+/* RENDER */
 function render(){
 
   let ultReady = round>=3 && cooldown.ult===0;
@@ -285,5 +379,7 @@ function render(){
   }
 }
 
-</script></body>
+</script>
+
+</body>
 </html>
