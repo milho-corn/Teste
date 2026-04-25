@@ -12,7 +12,7 @@ body {
 }
 
 /* ======================
-   MENU (CARDS)
+   MENU
 ====================== */
 
 .character-grid {
@@ -28,7 +28,6 @@ body {
   padding: 15px;
   cursor: pointer;
   background: #f5f5f5;
-  transition: 0.2s;
 }
 
 .card:hover {
@@ -63,8 +62,7 @@ button {
 .player { background: green; }
 .enemy { background: red; }
 
-.hidden { display: none; }
-
+/* 🔥 IMPORTANTE: começa escondido aqui */
 #game {
   display: none;
 }
@@ -85,13 +83,11 @@ button {
     <div class="card" onclick="select('kael')">
       <h3>🔥 Kael</h3>
       <p>Assassino de fogo</p>
-      <p>Alta velocidade</p>
     </div>
 
     <div class="card" onclick="select('lyra')">
       <h3>🌪️ Lyra</h3>
       <p>Manipuladora de ar</p>
-      <p>Magia e suporte</p>
     </div>
 
   </div>
@@ -135,7 +131,7 @@ let round = 1;
 let skipEnemyTurn = false;
 
 /* ======================
-   SELEÇÃO (CORRIGIDA)
+   SELEÇÃO (CORRIGIDA 100%)
 ====================== */
 
 function select(char) {
@@ -153,7 +149,9 @@ function select(char) {
 
   playerTurn = true;
 
-  setTimeout(() => start(), 50);
+  setTimeout(() => {
+    start();
+  }, 50);
 }
 
 /* ======================
