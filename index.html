@@ -1,10 +1,7 @@
-<!DOCTYPE html>
-<html lang="pt-BR">
+<!DOCTYPE html><html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<title>Mini RPG Estável</title>
-
-<style>
+<title>Mini RPG Estável</title><style>
 body {
   font-family: "Courier New", monospace;
   background: #fff;
@@ -18,15 +15,8 @@ body {
   height: 100vh;
 }
 
-#startScreen button {
-  padding: 15px 25px;
-  font-size: 18px;
-  cursor: pointer;
-  border: 2px solid #444;
-  background: #eee;
-}
-
 #menu { display: none; }
+#game { display: none; }
 
 .character-grid {
   display: flex;
@@ -40,98 +30,51 @@ body {
   border: 3px solid #444;
   padding: 15px;
   cursor: pointer;
-  background: #f5f5f5;
 }
-
-#game { display: none; }
 
 button {
   padding: 10px;
   margin: 5px;
   border: 2px solid #444;
-  background: #eee;
   cursor: pointer;
 }
 
 button:disabled {
   opacity: 0.4;
-  cursor: not-allowed;
 }
 
 .bar-container {
   width: 300px;
   border: 2px solid #444;
   margin: 10px auto;
-  background: #ddd;
 }
 
 .bar {
   height: 18px;
-  transition: 0.3s;
 }
 
 .player { background: green; }
 .enemy { background: red; }
-
-#damageText {
-  height: 20px;
-  margin: 10px;
-  font-weight: bold;
-  color: #b30000;
-}
-</style>
-</head>
-
-<body>
-
-<div id="startScreen">
+</style></head><body><div id="startScreen">
   <h1>Mini RPG</h1>
-  <button onclick="startGame()">START THE GAME</button>
-</div>
-
-<div id="menu">
-  <h2>Escolha seu personagem</h2>
-
+  <button onclick="startGame()">START</button>
+</div><div id="menu">
+  <h2>Escolha</h2>
   <div class="character-grid">
-    <div class="card" onclick="select('kael')">
-      <h3>🔥 Kael</h3>
-    </div>
-
-    <div class="card" onclick="select('lyra')">
-      <h3>🌪️ Lyra</h3>
-    </div>
-
-    <div class="card" onclick="select('dopamina')">
-      <h3>✨ Dopamina</h3>
-    </div>
+    <div class="card" onclick="select('kael')">🔥 Kael</div>
+    <div class="card" onclick="select('lyra')">🌪️ Lyra</div>
+    <div class="card" onclick="select('dopamina')">✨ Dopamina</div>
   </div>
-</div>
-
-<div id="game">
-  <h2 id="name"></h2>
-
-  <div class="bar-container">
+</div><div id="game">
+  <h2 id="name"></h2>  <div class="bar-container">
     <div id="playerHp" class="bar player"></div>
-  </div>
-
-  <div class="bar-container">
+  </div>  <div class="bar-container">
     <div id="enemyHp" class="bar enemy"></div>
-  </div>
-
-  <p id="status"></p>
+  </div>  <p id="status"></p>
   <p id="damageText"></p>
-
   <div id="actions"></div>
-</div>
+</div><script>
 
-<script>
-
-function startGame() {
-  document.getElementById("startScreen").style.display = "none";
-  document.getElementById("menu").style.display = "block";
-}
-
-/* STATE */
 let player = {};
 let enemy = { hp: 100 };
 
@@ -141,332 +84,206 @@ let gameOver = false;
 
 let shield = false;
 let skipEnemyTurn = false;
-let acting = false;
 
-let cooldown = {
-  double: 0,
-  smoke: 0,
-  dash: 0,
-  ult: 0
-};
+let cooldown = { double:0, smoke:0, dash:0, ult:0 };
 
-function select(char) {
-
-  if (char === "kael") {
-    player = { name:"Kael", hp:100, atk:9, mag:4 };
-  }
-
-  if (char === "lyra") {
-    player = { name:"Lyra", hp:100, atk:5, mag:7 };
-  }
-
-  if (char === "dopamina") {
-    player = { name:"Dopamina", hp:100, atk:8, mag:8 };
-  }
-
-  document.getElementById("menu").style.display = "none";
-  document.getElementById("game").style.display = "block";
-
-  start();
+function startGame(){
+  startScreen.style.display="none";
+  menu.style.display="block";
 }
 
-function start() {
-  document.getElementById("name").innerText = player.name;
+function select(char){
+
+  if(char==="kael") player={name:"Kael",hp:100,atk:9,mag:4};
+  if(char==="lyra") player={name:"Lyra",hp:100,atk:5,mag:7};
+  if(char==="dopamina") player={name:"Dopamina",hp:100,atk:8,mag:8};
+
+  menu.style.display="none";
+  game.style.display="block";
+
   update();
-  render();
 }
 
-/* UTILS */
-function clamp(v){ return Math.max(0, Math.min(100, v)); }
-function delay(ms){ return new Promise(r => setTimeout(r, ms)); }
-function showDamage(t){ document.getElementById("damageText").innerText = t; }
+function clamp(v){ return Math.max(0,Math.min(100,v)); }
+function delay(ms){ return new Promise(r=>setTimeout(r,ms)); }
 
-function checkGameOver() {
-
-  if (enemy.hp <= 0) {
-    gameOver = true;
-    alert("Você venceu!");
-    location.reload();
-  }
-
-  if (player.hp <= 0) {
-    gameOver = true;
-    alert("Você perdeu!");
-    location.reload();
-  }
-}
-
-/* COOLDOWN */
-function tickCooldowns(){
-  for (let k in cooldown){
-    if (cooldown[k] > 0) cooldown[k]--;
-  }
-}
-
-function update() {
-
-  if (gameOver) return;
+function update(){
 
   player.hp = clamp(player.hp);
   enemy.hp = clamp(enemy.hp);
 
-  document.getElementById("playerHp").style.width = player.hp + "%";
-  document.getElementById("enemyHp").style.width = enemy.hp + "%";
+  playerHp.style.width = player.hp+"%";
+  enemyHp.style.width = enemy.hp+"%";
 
-  document.getElementById("status").innerText =
-    `Rodada ${round} | ${playerTurn ? "Sua vez ⚔️" : "Inimigo..."}`;
+  status.innerText = `Rodada ${round} | ${playerTurn?"Sua vez":"Inimigo"}`;
 
-  tickCooldowns();
+  for(let k in cooldown){
+    if(cooldown[k]>0) cooldown[k]--;
+  }
+
+  render();
 }
 
-/* TURN */
-function endTurn() {
-  playerTurn = false;
+function endTurn(){
+  playerTurn=false;
   update();
-  setTimeout(enemyTurn, 1500);
+  setTimeout(enemyTurn,1200);
 }
 
-async function enemyTurn() {
+async function enemyTurn(){
 
-  let dmg = Math.floor(Math.random() * 10) + 5;
+  if(skipEnemyTurn){
+    skipEnemyTurn=false;
+    round++;
+    playerTurn=true;
+    update();
+    return;
+  }
 
-  if (shield) {
-    dmg = Math.floor(dmg * 0.5);
-    shield = false;
+  let dmg = Math.floor(Math.random()*10)+5;
+
+  if(shield){
+    dmg = Math.floor(dmg*0.5);
+    shield=false;
   }
 
   player.hp -= dmg;
+  damageText.innerText = "Inimigo: "+dmg;
 
-  showDamage(`Inimigo causou ${dmg}`);
-
-  checkGameOver();
-
-  await delay(1500);
+  await delay(1200);
 
   round++;
-  playerTurn = true;
+  playerTurn=true;
   update();
 }
 
-/* ======================
-   KAEL
-====================== */
-
-async function kael_double(){
-  if (!playerTurn || cooldown.double > 0) return;
-
-  cooldown.double = 2;
-
-  let dmg = player.atk * 2;
-  enemy.hp -= dmg;
-
-  showDamage(`Dupla de cortes flamejante: ${dmg}`);
-
-  update();
-  await delay(1500);
+/* ===== KAEL ===== */
+function kael_double(){
+  if(!playerTurn || cooldown.double) return;
+  cooldown.double=2;
+  enemy.hp -= player.atk*2;
+  damageText.innerText="Dupla flamejante";
   endTurn();
 }
 
-async function kael_smoke(){
-  if (!playerTurn || cooldown.smoke > 0) return;
-
-  cooldown.smoke = 3;
-  skipEnemyTurn = true;
-
-  showDamage("Bomba de fumaça!");
-
-  await delay(1500);
+function kael_smoke(){
+  if(!playerTurn || cooldown.smoke) return;
+  cooldown.smoke=3;
+  skipEnemyTurn=true;
+  damageText.innerText="Fumaça";
   endTurn();
 }
 
-async function kael_dash(){
-  if (!playerTurn || cooldown.dash > 0) return;
-
-  cooldown.dash = 2;
-
-  let dmg = player.atk * 2;
-  enemy.hp -= dmg;
-
-  showDamage(`Investida fatal: ${dmg}`);
-
-  update();
-  await delay(1500);
+function kael_dash(){
+  if(!playerTurn || cooldown.dash) return;
+  cooldown.dash=2;
+  enemy.hp -= player.atk*2;
+  damageText.innerText="Investida";
   endTurn();
 }
 
-async function kael_ult(){
-  if (!playerTurn || round < 3 || cooldown.ult > 0) return;
-
-  cooldown.ult = 5;
-
-  let dmg = player.atk * 4;
-  enemy.hp -= dmg;
-
-  showDamage(`FATALIDADE EM CHAMAS: ${dmg}`);
-
-  update();
-  await delay(1800);
+function kael_ult(){
+  if(!playerTurn || round<3 || cooldown.ult) return;
+  cooldown.ult=5;
+  enemy.hp -= player.atk*4;
+  damageText.innerText="FATALIDADE";
   endTurn();
 }
 
-/* ======================
-   LYRA
-====================== */
-
-async function lyra_air(){
-  if (!playerTurn || cooldown.double > 0) return;
-
-  cooldown.double = 2;
-
-  let dmg = player.mag * 2;
-  enemy.hp -= dmg;
-
-  showDamage(`Sopro de ar: ${dmg}`);
-
-  update();
-  await delay(1500);
+/* ===== LYRA ===== */
+function lyra_air(){
+  if(!playerTurn || cooldown.double) return;
+  cooldown.double=2;
+  enemy.hp -= player.mag*2;
+  damageText.innerText="Sopro de ar";
   endTurn();
 }
 
-async function lyra_fly(){
-  if (!playerTurn || cooldown.dash > 0) return;
-
-  cooldown.dash = 2;
-
-  let dmg = player.atk * 2;
-  enemy.hp -= dmg;
-
-  showDamage(`Voo bravo: ${dmg}`);
-
-  update();
-  await delay(1500);
+function lyra_fly(){
+  if(!playerTurn || cooldown.dash) return;
+  cooldown.dash=2;
+  enemy.hp -= player.atk*2;
+  damageText.innerText="Voo bravo";
   endTurn();
 }
 
-async function lyra_shield(){
-  if (!playerTurn || cooldown.smoke > 0) return;
-
-  cooldown.smoke = 3;
-  shield = true;
-
-  showDamage("Proteção de ventosa");
-
-  update();
-  await delay(1500);
+function lyra_shield(){
+  if(!playerTurn || cooldown.smoke) return;
+  cooldown.smoke=3;
+  shield=true;
+  damageText.innerText="Proteção";
   endTurn();
 }
 
-async function lyra_ult(){
-  if (!playerTurn || round < 3 || cooldown.ult > 0) return;
-
-  cooldown.ult = 5;
-
-  let dmg = player.mag * 5;
-  enemy.hp -= dmg;
-
-  showDamage(`FURACÃO 2000: ${dmg}`);
-
-  update();
-  await delay(1800);
+function lyra_ult(){
+  if(!playerTurn || round<3 || cooldown.ult) return;
+  cooldown.ult=5;
+  enemy.hp -= player.mag*5;
+  damageText.innerText="Furacão";
   endTurn();
 }
 
-/* ======================
-   DOPAMINA
-====================== */
-
-async function dopamina_pisa(){
-  if (!playerTurn || cooldown.double > 0) return;
-
-  cooldown.double = 2;
-
-  let dmg = player.atk * 2;
-  enemy.hp -= dmg;
-
-  showDamage(`Pisa menos!: ${dmg}`);
-
-  update();
-  await delay(1500);
+/* ===== DOPAMINA ===== */
+function dopamina_pisa(){
+  if(!playerTurn || cooldown.double) return;
+  cooldown.double=2;
+  enemy.hp -= player.atk*2;
+  damageText.innerText="Pisa menos!";
   endTurn();
 }
 
-async function dopamina_lacre(){
-  if (!playerTurn || cooldown.dash > 0) return;
-
-  cooldown.dash = 2;
-
-  let dmg = player.mag * 2;
-  enemy.hp -= dmg;
-
-  showDamage(`Lacre agudo: ${dmg}`);
-
-  update();
-  await delay(1500);
+function dopamina_lacre(){
+  if(!playerTurn || cooldown.dash) return;
+  cooldown.dash=2;
+  enemy.hp -= player.mag*2;
+  damageText.innerText="Lacre agudo";
   endTurn();
 }
 
-async function dopamina_shantay(){
-  if (!playerTurn || cooldown.smoke > 0) return;
-
-  cooldown.smoke = 3;
-  shield = true;
-
-  showDamage("Shantay, I stay");
-
-  update();
-  await delay(1500);
+function dopamina_shantay(){
+  if(!playerTurn || cooldown.smoke) return;
+  cooldown.smoke=3;
+  shield=true;
+  damageText.innerText="Shantay!";
   endTurn();
 }
 
-async function dopamina_ult(){
-  if (!playerTurn || round < 3 || cooldown.ult > 0) return;
-
-  cooldown.ult = 5;
-
-  let dmg = player.mag * 6;
-  enemy.hp -= dmg;
-
-  showDamage(`SASHAY, AWAY: ${dmg}`);
-
-  update();
-  await delay(1800);
+function dopamina_ult(){
+  if(!playerTurn || round<3 || cooldown.ult) return;
+  cooldown.ult=5;
+  enemy.hp -= player.mag*6;
+  damageText.innerText="Sashay away!";
   endTurn();
 }
 
-/* RENDER */
-function render() {
+function render(){
 
-  let ultReady = round >= 3 && cooldown.ult === 0;
+  let ultReady = round>=3 && cooldown.ult===0;
 
-  if (player.name === "Kael") {
-    document.getElementById("actions").innerHTML = `
-      <button onclick="kael_double()">Dupla de cortes flamejante</button>
-      <button onclick="kael_smoke()">Bomba de fumaça</button>
-      <button onclick="kael_dash()">Investida fatal</button>
-      <button onclick="kael_ult()" ${!ultReady?'disabled':''}>Fatalidade em chamas</button>
-    `;
+  if(player.name==="Kael"){
+    actions.innerHTML=`
+    <button onclick="kael_double()">Dupla</button>
+    <button onclick="kael_smoke()">Fumaça</button>
+    <button onclick="kael_dash()">Investida</button>
+    <button onclick="kael_ult()" ${!ultReady?"disabled":""}>ULT</button>`;
   }
 
-  if (player.name === "Lyra") {
-    document.getElementById("actions").innerHTML = `
-      <button onclick="lyra_air()">Sopro de ar</button>
-      <button onclick="lyra_fly()">Voo bravo</button>
-      <button onclick="lyra_shield()">Proteção de ventosa</button>
-      <button onclick="lyra_ult()" ${!ultReady?'disabled':''}>Furacão 2000</button>
-    `;
+  if(player.name==="Lyra"){
+    actions.innerHTML=`
+    <button onclick="lyra_air()">Ar</button>
+    <button onclick="lyra_fly()">Voo</button>
+    <button onclick="lyra_shield()">Proteção</button>
+    <button onclick="lyra_ult()" ${!ultReady?"disabled":""}>ULT</button>`;
   }
 
-  if (player.name === "Dopamina") {
-    document.getElementById("actions").innerHTML = `
-      <button onclick="dopamina_pisa()">Pisa menos!</button>
-      <button onclick="dopamina_lacre()">Lacre agudo</button>
-      <button onclick="dopamina_shantay()">Shantay, I stay</button>
-      <button onclick="dopamina_ult()" ${!ultReady?'disabled':''}>Sashay, away</button>
-    `;
+  if(player.name==="Dopamina"){
+    actions.innerHTML=`
+    <button onclick="dopamina_pisa()">Pisa</button>
+    <button onclick="dopamina_lacre()">Lacre</button>
+    <button onclick="dopamina_shantay()">Shantay</button>
+    <button onclick="dopamina_ult()" ${!ultReady?"disabled":""}>ULT</button>`;
   }
 }
 
-</script>
-
-</body>
+</script></body>
 </html>
