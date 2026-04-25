@@ -65,6 +65,31 @@ button {
 
 .player { background: green; }
 .enemy { background: red; }
+
+/* ======================
+   🔥 NOVO: DANO NA TELA
+====================== */
+
+#damageText {
+  height: 20px;
+  margin: 10px;
+  font-weight: bold;
+  color: #b30000;
+}
+
+/* ======================
+   🔥 NOVO: ANIMAÇÃO HIT
+====================== */
+
+.hit {
+  animation: hitAnim 0.2s;
+}
+
+@keyframes hitAnim {
+  0% { transform: translateX(0); }
+  50% { transform: translateX(-6px); }
+  100% { transform: translateX(0); }
+}
 </style>
 </head>
 
@@ -107,6 +132,9 @@ button {
 
   <p id="status"></p>
 
+  <!-- 🔥 NOVO: texto de dano -->
+  <p id="damageText"></p>
+
   <div id="actions"></div>
 </div>
 
@@ -126,7 +154,7 @@ let shield = false;
 let skipEnemyTurn = false;
 
 /* ======================
-   START DO JOGO
+   START
 ====================== */
 
 function select(char) {
@@ -139,7 +167,6 @@ function select(char) {
     player = { name:"Lyra", hp:100, atk:5, mag:7 };
   }
 
-  // 🔥 troca de tela garantida
   document.getElementById("menu").style.display = "none";
   document.getElementById("game").style.display = "block";
 
@@ -162,6 +189,24 @@ function start() {
 
 function clamp(v){
   return Math.max(0, Math.min(100, v));
+}
+
+function showDamage(text){
+  const el = document.getElementById("damageText");
+  el.innerText = text;
+
+  setTimeout(() => {
+    el.innerText = "";
+  }, 700);
+}
+
+function hitEnemy(){
+  const bar = document.getElementById("enemyHp");
+  bar.classList.add("hit");
+
+  setTimeout(() => {
+    bar.classList.remove("hit");
+  }, 200);
 }
 
 function update() {
@@ -207,10 +252,7 @@ function enemyTurn() {
 
   player.hp -= dmg;
 
-  if (enemy.hp <= 0) {
-    alert("Você venceu!");
-    location.reload();
-  }
+  update();
 
   if (player.hp <= 0) {
     alert("Você perdeu!");
@@ -223,14 +265,20 @@ function enemyTurn() {
 }
 
 /* ======================
-   AÇÕES KAEL
+   KAEL
 ====================== */
 
 function kael_double() {
   if (!playerTurn) return;
 
-  enemy.hp -= player.atk * 0.7;
-  enemy.hp -= player.atk * 0.7;
+  let d1 = Math.floor(player.atk * 0.7);
+  let d2 = Math.floor(player.atk * 0.7);
+
+  enemy.hp -= d1;
+  enemy.hp -= d2;
+
+  hitEnemy();
+  showDamage(`Kael causou ${d1 + d2} de dano`);
 
   endTurn();
 }
@@ -239,38 +287,64 @@ function kael_smoke() {
   if (!playerTurn) return;
 
   skipEnemyTurn = true;
+  showDamage("Kael usou fumaça!");
+
   endTurn();
 }
 
 function kael_dash() {
   if (!playerTurn) return;
 
-  enemy.hp -= player.atk * 2;
+  let dmg = player.atk * 2;
+
+  enemy.hp -= dmg;
+
+  hitEnemy();
+  showDamage(`Kael causou ${dmg} de dano`);
+
   endTurn();
 }
 
 function kael_ult() {
   if (!playerTurn) return;
 
-  enemy.hp -= player.atk * 4;
+  let dmg = player.atk * 4;
+
+  enemy.hp -= dmg;
+
+  hitEnemy();
+  showDamage(`ULTIMATE! ${dmg} de dano`);
+
   endTurn();
 }
 
 /* ======================
-   AÇÕES LYRA
+   LYRA
 ====================== */
 
 function lyra_air() {
   if (!playerTurn) return;
 
-  enemy.hp -= player.mag * 2;
+  let dmg = player.mag * 2;
+
+  enemy.hp -= dmg;
+
+  hitEnemy();
+  showDamage(`Lyra causou ${dmg} de dano mágico`);
+
   endTurn();
 }
 
 function lyra_fly() {
   if (!playerTurn) return;
 
-  enemy.hp -= player.atk * 2;
+  let dmg = player.atk * 2;
+
+  enemy.hp -= dmg;
+
+  hitEnemy();
+  showDamage(`Lyra atacou ${dmg} de dano`);
+
   endTurn();
 }
 
@@ -278,13 +352,21 @@ function lyra_shield() {
   if (!playerTurn) return;
 
   shield = true;
+  showDamage("Lyra ativou proteção");
+
   endTurn();
 }
 
 function lyra_ult() {
   if (!playerTurn) return;
 
-  enemy.hp -= player.mag * 5;
+  let dmg = player.mag * 5;
+
+  enemy.hp -= dmg;
+
+  hitEnemy();
+  showDamage(`FURACÃO! ${dmg} de dano`);
+
   endTurn();
 }
 
