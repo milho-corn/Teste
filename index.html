@@ -53,7 +53,7 @@ button {
   font-weight: bold;
 }
 
-/* COOLDOWN BAR */
+/* cooldown visual */
 .cooldown-fill {
   position: absolute;
   left: 0;
@@ -151,7 +151,7 @@ let gameOver = false;
 let shield = false;
 let skipEnemyTurn = false;
 
-/* COOLDOWN EM SEGUNDOS */
+/* cooldown 10s */
 let cooldown = {
   double:0,
   smoke:0,
@@ -166,25 +166,25 @@ const maxCooldown = {
   ult:5
 };
 
-/* SKILLS DEFINIÇÃO (OPÇÃO B LIMPA) */
+/* SKILLS */
 const skills = {
   kael: [
     {name:"Dupla", key:"double", dmg:2},
     {name:"Fumaça", key:"smoke", effect:"skip"},
     {name:"Investida", key:"dash", dmg:2},
-    {name:"ULT", key:"ult", ult:true, dmg:4}
+    {name:"ULT", key:"ult", dmg:4, ult:true}
   ],
   lyra: [
     {name:"Ar", key:"double", dmg:2},
     {name:"Voo", key:"dash", dmg:2},
     {name:"Proteção", key:"smoke", effect:"shield"},
-    {name:"ULT", key:"ult", ult:true, dmg:5}
+    {name:"ULT", key:"ult", dmg:5, ult:true}
   ],
   dopamina: [
     {name:"Pisa", key:"double", dmg:2},
     {name:"Lacre", key:"dash", dmg:2},
     {name:"Shantay", key:"smoke", effect:"shield"},
-    {name:"ULT", key:"ult", ult:true, dmg:6}
+    {name:"ULT", key:"ult", dmg:6, ult:true}
   ]
 };
 
@@ -195,11 +195,11 @@ function startGame(){
 
 function select(char){
   player = {
+    id: char,
     name: char,
     hp: 100,
     atk: 8,
-    mag: 6,
-    id: char
+    mag: 6
   };
 
   menu.style.display="none";
@@ -226,9 +226,11 @@ function checkGameOver(){
     alert("Você perdeu!");
     return true;
   }
+
   return false;
 }
 
+/* UPDATE */
 function update(){
 
   player.hp = clamp(player.hp);
@@ -247,7 +249,7 @@ function update(){
   render();
 }
 
-/* COOLDOWN TICK (10s = 10 frames) */
+/* COOLDOWN */
 setInterval(() => {
   for(let k in cooldown){
     if(cooldown[k] > 0) cooldown[k]--;
@@ -266,6 +268,14 @@ function endTurn(){
 async function enemyTurn(){
 
   if(gameOver) return;
+
+  if(skipEnemyTurn){
+    skipEnemyTurn = false;
+    round++;
+    playerTurn = true;
+    update();
+    return;
+  }
 
   let dmg = Math.floor(Math.random()*10)+5;
 
@@ -286,7 +296,7 @@ async function enemyTurn(){
   update();
 }
 
-/* UI COOLDOWN */
+/* HELPERS */
 function pct(key){
   return cooldown[key] > 0 ? cooldown[key]/maxCooldown[key] : 0;
 }
@@ -295,10 +305,11 @@ function canUse(key){
   return cooldown[key] <= 0 && playerTurn && !gameOver;
 }
 
-/* EXECUTA SKILL */
-function useSkill(key, skill){
+/* EXECUÇÃO */
+function useSkill(key){
 
-  if(!canUse(key)) return;
+  let skill = skills[player.id].find(s => s.key === key);
+  if(!skill || !canUse(key)) return;
 
   cooldown[key] = maxCooldown[key];
 
@@ -307,13 +318,8 @@ function useSkill(key, skill){
     damageText.innerText = skill.name;
   }
 
-  if(skill.effect === "skip"){
-    skipEnemyTurn = true;
-  }
-
-  if(skill.effect === "shield"){
-    shield = true;
-  }
+  if(skill.effect === "skip") skipEnemyTurn = true;
+  if(skill.effect === "shield") shield = true;
 
   if(skill.ult){
     enemy.hp -= player.atk * skill.dmg;
@@ -329,16 +335,17 @@ function render(){
   let list = skills[player.id] || [];
 
   actions.innerHTML = list.map(s => {
-    let disabled = !canUse(s.key);
+
     let fill = pct(s.key);
+    let disabled = !canUse(s.key);
 
     return `
-      <button onclick="useSkill('${s.key}', ${JSON.stringify(s)})"
-        ${disabled?"disabled":""}
-        class="${s.ult?'ult':''}">
+      <button onclick="useSkill('${s.key}')"
+        ${disabled ? "disabled" : ""}
+        class="${s.ult ? 'ult' : ''}">
 
         <div class="cooldown-fill" style="transform:scaleX(${fill})"></div>
-        <span>${s.name}${cooldown[s.key]>0?` (${cooldown[s.key]})`:''}</span>
+        <span>${s.name}${cooldown[s.key]>0 ? ` (${cooldown[s.key]})` : ''}</span>
       </button>
     `;
   }).join("");
