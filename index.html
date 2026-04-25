@@ -11,7 +11,29 @@ body {
   text-align: center;
 }
 
+/* ======================
+   START SCREEN
+====================== */
+#startScreen {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  height: 100vh;
+}
+
+#startScreen button {
+  padding: 15px 25px;
+  font-size: 18px;
+  cursor: pointer;
+  border: 2px solid #444;
+  background: #eee;
+}
+
 /* MENU */
+#menu {
+  display: none;
+}
+
 .character-grid {
   display: flex;
   justify-content: center;
@@ -60,11 +82,6 @@ button {
 .player { background: green; }
 .enemy { background: red; }
 
-img {
-  image-rendering: pixelated;
-  margin: 10px;
-}
-
 /* DANO */
 #damageText {
   height: 20px;
@@ -88,30 +105,38 @@ img {
 
 <body>
 
+<!-- ======================
+   START SCREEN
+====================== -->
+<div id="startScreen">
+  <h1>Mini RPG</h1>
+  <button onclick="startGame()">START THE GAME</button>
+</div>
+
+<!-- ======================
+   MENU
+====================== -->
 <div id="menu">
   <h2>Escolha seu personagem</h2>
 
   <div class="character-grid">
     <div class="card" onclick="select('kael')">
-      <img src="images/kael.png" width="120">
       <h3>🔥 Kael</h3>
       <p>Assassino de fogo</p>
     </div>
 
     <div class="card" onclick="select('lyra')">
-      <img src="images/lyra.png" width="120">
       <h3>🌪️ Lyra</h3>
       <p>Manipuladora de ar</p>
     </div>
   </div>
 </div>
 
+<!-- ======================
+   GAME
+====================== -->
 <div id="game">
   <h2 id="name"></h2>
-
-  <!-- PERSONAGENS -->
-  <img id="playerSprite" width="140">
-  <img id="enemySprite" src="images/enemy.png" width="140">
 
   <div class="bar-container">
     <div id="playerHp" class="bar player"></div>
@@ -128,6 +153,15 @@ img {
 </div>
 
 <script>
+
+/* ======================
+   START FLOW
+====================== */
+
+function startGame() {
+  document.getElementById("startScreen").style.display = "none";
+  document.getElementById("menu").style.display = "block";
+}
 
 /* ======================
    ESTADO
@@ -151,12 +185,10 @@ function select(char) {
 
   if (char === "kael") {
     player = { name:"Kael", hp:100, atk:9, mag:4 };
-    document.getElementById("playerSprite").src = "images/kael.png";
   }
 
   if (char === "lyra") {
     player = { name:"Lyra", hp:100, atk:5, mag:7 };
-    document.getElementById("playerSprite").src = "images/lyra.png";
   }
 
   document.getElementById("menu").style.display = "none";
@@ -192,7 +224,7 @@ function hitEnemy(){
 }
 
 /* ======================
-   GAME OVER (FIX REAL)
+   GAME OVER
 ====================== */
 
 function checkGameOver() {
@@ -203,7 +235,6 @@ function checkGameOver() {
     gameOver = true;
     enemy.hp = 0;
     update();
-
     setTimeout(() => {
       alert("Você venceu!");
       location.reload();
@@ -215,7 +246,6 @@ function checkGameOver() {
     gameOver = true;
     player.hp = 0;
     update();
-
     setTimeout(() => {
       alert("Você perdeu!");
       location.reload();
@@ -248,6 +278,7 @@ function update() {
 ====================== */
 
 function endTurn() {
+
   if (gameOver) return;
 
   playerTurn = false;
