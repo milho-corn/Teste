@@ -61,7 +61,6 @@ button {
 
   <div id="actions"></div>
 </div>
-
 <script>
 
 /* ======================
@@ -75,6 +74,9 @@ let playerTurn = true;
 
 let invisible = false;
 let shield = false;
+
+let round = 1; // 🔢 NOVO: contador de rodadas
+let skipEnemyTurn = false; // 💨 fumaça
 
 /* ======================
    SETUP
@@ -125,7 +127,8 @@ function update() {
   document.getElementById("enemyHp").style.width = enemy.hp + "%";
 
   document.getElementById("status").innerText =
-    playerTurn ? "Sua vez ⚔️" : "Inimigo atacando 👾";
+    `Rodada ${round} | ` +
+    (playerTurn ? "Sua vez ⚔️" : "Inimigo atacando 👾");
 }
 
 /* ======================
@@ -141,17 +144,28 @@ function endTurn() {
 
 function enemyTurn() {
 
-  /* invisível bloqueia ataque */
+  // 💨 fumaça: inimigo perde 1 rodada
+  if (skipEnemyTurn) {
+    skipEnemyTurn = false;
+    playerTurn = true;
+
+    round++; // ainda conta rodada
+    update();
+    return;
+  }
+
+  // invisibilidade (Kael)
   if (invisible) {
     invisible = false;
     playerTurn = true;
+
+    round++; // rodada avança mesmo assim
     update();
     return;
   }
 
   let dmg = Math.floor(Math.random() * 10) + 5;
 
-  /* escudo reduz dano */
   if (shield) {
     dmg = Math.floor(dmg * 0.5);
     shield = false;
@@ -160,6 +174,8 @@ function enemyTurn() {
   player.hp -= dmg;
 
   checkEnd();
+
+  round++; // 🔢 nova rodada a cada ciclo completo
 
   playerTurn = true;
   update();
@@ -172,8 +188,12 @@ function enemyTurn() {
 function kael_double() {
   if (!playerTurn) return;
 
-  enemy.hp -= Math.floor(player.atk * 0.7);
-  enemy.hp -= Math.floor(player.atk * 0.7);
+  // 🔥 dois hits reais no MESMO turno
+  let hit1 = Math.floor(player.atk * 0.7);
+  let hit2 = Math.floor(player.atk * 0.7);
+
+  enemy.hp -= hit1;
+  enemy.hp -= hit2;
 
   finish();
 }
@@ -181,10 +201,11 @@ function kael_double() {
 function kael_smoke() {
   if (!playerTurn) return;
 
-  invisible = true;
+  // 💨 inimigo perde próxima rodada inteira
+  skipEnemyTurn = true;
 
   document.getElementById("status").innerText =
-    "Kael ficou invisível!";
+    "Kael usou fumaça! Inimigo perdeu a rodada.";
 
   finish(false);
 }
@@ -284,10 +305,10 @@ function render() {
 
   if (player.name === "Kael") {
     document.getElementById("actions").innerHTML = `
-      <button onclick="kael_double()">Duplo Corte</button>
-      <button onclick="kael_smoke()">Fumaça</button>
-      <button onclick="kael_dash()">Investida</button>
-      <button onclick="kael_ult()">Ultimate</button>
+      <button onclick="kael_double()">Duplo Corte Flamejante</button>
+      <button onclick="kael_smoke()">Bomba de Fumaça</button>
+      <button onclick="kael_dash()">Investida Fatal</button>
+      <button onclick="kael_ult()">Fatalidade em Chamas</button>
     `;
   }
 
@@ -295,8 +316,8 @@ function render() {
     document.getElementById("actions").innerHTML = `
       <button onclick="lyra_air()">Sopro de Ar</button>
       <button onclick="lyra_fly()">Voo Bravo</button>
-      <button onclick="lyra_shield()">Proteção</button>
-      <button onclick="lyra_ult()">Furacão</button>
+      <button onclick="lyra_shield()">Proteção de Ventosa</button>
+      <button onclick="lyra_ult()">Furacão 2000</button>
     `;
   }
 }
