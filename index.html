@@ -8,96 +8,131 @@
 
 body {
   font-family: "Segoe UI", Arial, sans-serif;
-  background: #f5f7fb;
-  text-align: center;
+  background: linear-gradient(135deg, #eef2ff, #f8fafc);
   margin: 0;
+
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
 }
 
 /* telas */
-#menu, #game { display: none; }
+#menu, #game { display: none; width: 100%; }
 
 #startScreen {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  height: 100vh;
+  text-align: center;
 }
 
 /* container */
 .game-container {
   background: white;
-  max-width: 420px;
-  margin: 40px auto;
-  padding: 25px;
-  border-radius: 20px;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+  width: 90%;
+  max-width: 600px;
+  padding: 40px;
+  border-radius: 25px;
+  box-shadow: 0 20px 50px rgba(0,0,0,0.1);
 }
 
 /* personagens */
 .character-grid {
   display: flex;
   justify-content: center;
-  gap: 20px;
+  gap: 25px;
 }
 
 .card {
-  padding: 20px;
-  background: white;
-  border-radius: 12px;
+  padding: 25px;
+  border-radius: 16px;
   cursor: pointer;
-  box-shadow: 0 6px 15px rgba(0,0,0,0.08);
+  box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+  transition: 0.2s;
+}
+
+.card:hover {
+  transform: translateY(-5px);
 }
 
 /* barras */
 .bar-container {
   background: #e9edf5;
-  border-radius: 10px;
-  margin: 10px 0;
+  border-radius: 12px;
+  margin: 15px 0;
+  height: 28px;
   overflow: hidden;
   position: relative;
 }
 
 .enemy-box {
-  margin-bottom: 25px;
+  margin-bottom: 35px;
 }
 
 .bar {
-  height: 20px;
+  height: 100%;
+  position: relative;
+  overflow: hidden;
 }
 
-.player { background: green; }
-.enemy { background: red; }
-#playerMana { background: blue; }
+/* brilho animado */
+.bar::after {
+  content: "";
+  position: absolute;
+  width: 50%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+  animation: shine 2s infinite;
+}
+
+@keyframes shine {
+  from { left: -50%; }
+  to { left: 100%; }
+}
+
+.player { background: linear-gradient(90deg, #4caf50, #2e7d32); }
+.enemy { background: linear-gradient(90deg, #ef5350, #c62828); }
+#playerMana { background: linear-gradient(90deg, #42a5f5, #1565c0); }
 
 .bar-label {
   position: absolute;
   width: 100%;
-  font-size: 12px;
+  font-size: 14px;
   top: 0;
+  line-height: 28px;
+  font-weight: bold;
 }
 
 /* botões */
 .actions {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 10px;
+  gap: 15px;
+  margin-top: 20px;
 }
 
 button {
   position: relative;
-  padding: 10px;
-  border-radius: 10px;
+  padding: 16px;
+  border-radius: 14px;
   border: none;
   background: white;
   cursor: pointer;
-  box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+  box-shadow: 0 6px 15px rgba(0,0,0,0.1);
+  transition: 0.2s;
+}
+
+button:hover {
+  transform: translateY(-3px);
+}
+
+button:active {
+  transform: scale(0.95);
 }
 
 button:disabled {
   opacity: 0.4;
 }
 
-/* cooldown visual */
+/* cooldown */
 .cooldown-fill {
   position: absolute;
   left: 0;
@@ -115,7 +150,7 @@ button:disabled {
 
 @keyframes hit {
   0% { transform: translateX(0); }
-  50% { transform: translateX(6px); }
+  50% { transform: translateX(8px); }
   100% { transform: translateX(0); }
 }
 
@@ -126,6 +161,23 @@ button:disabled {
 @keyframes fadeUp {
   from { opacity:0; transform:translateY(10px); }
   to { opacity:1; transform:translateY(0); }
+}
+
+/* impacto skill */
+.impact {
+  animation: impact 0.4s;
+}
+
+@keyframes impact {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+  100% { transform: scale(1); }
+}
+
+#damageText {
+  margin-top: 15px;
+  font-size: 18px;
+  font-weight: bold;
 }
 
 </style>
@@ -178,7 +230,6 @@ let enemy = { hp:100 };
 let cooldown = [0,0,0,0];
 const maxCd = [5,5,5,8];
 
-/* 🔥 AGORA COM TODOS OS PERSONAGENS */
 const skills = {
   kael: [
     {name:"Dupla", dmg:2, cost:20},
@@ -262,10 +313,12 @@ function useSkill(i){
   let dmg = s.dmg * player.atk;
   enemy.hp -= dmg;
 
-  enemyBox.classList.add("hit");
-  setTimeout(()=>enemyBox.classList.remove("hit"),300);
+  enemyBox.classList.add("hit","impact");
+  setTimeout(()=>enemyBox.classList.remove("hit","impact"),300);
 
   damageText.innerText = "Você causou "+dmg;
+  damageText.classList.remove("fade");
+  void damageText.offsetWidth;
   damageText.classList.add("fade");
 
   if(enemy.hp<=0){
