@@ -1,150 +1,202 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8">
-  <title>Simulador de Batalha</title>
+<meta charset="UTF-8">
+<title>Mini RPG</title>
 
-  <style>
-    body {
-      font-family: Arial;
-      text-align: center;
-      background: #111;
-      color: #fff;
-    }
+<style>
+body {
+  font-family: "Courier New", monospace;
+  background: #111;
+  color: #fff;
+  text-align: center;
+}
 
-    .tela {
-      display: none;
-    }
+/* estilo pixel simples */
+button {
+  font-family: "Courier New", monospace;
+  background: #222;
+  color: #fff;
+  border: 2px solid #555;
+  padding: 10px;
+  margin: 5px;
+  cursor: pointer;
+}
 
-    .ativa {
-      display: block;
-    }
+button:hover {
+  background: #333;
+}
 
-    button {
-      padding: 10px 20px;
-      margin: 10px;
-      cursor: pointer;
-    }
+.box {
+  border: 2px solid #444;
+  padding: 15px;
+  margin: 10px;
+  display: inline-block;
+  width: 250px;
+}
 
-    .barra {
-      width: 200px;
-      height: 20px;
-      background: #555;
-      margin: 10px auto;
-      border-radius: 10px;
-      overflow: hidden;
-    }
+.hidden {
+  display: none;
+}
 
-    .vida {
-      height: 100%;
-      background: limegreen;
-      width: 100%;
-      transition: width 0.3s;
-    }
-
-    .dano {
-      animation: dano 0.3s;
-    }
-
-    @keyframes dano {
-      0% { transform: translateX(0); }
-      25% { transform: translateX(-5px); }
-      50% { transform: translateX(5px); }
-      75% { transform: translateX(-5px); }
-      100% { transform: translateX(0); }
-    }
-  </style>
+.hp-bar {
+  height: 15px;
+  background: green;
+  width: 100%;
+  transition: 0.3s;
+}
+</style>
 </head>
 
 <body>
 
-  <!-- Tela inicial -->
-  <div id="menu" class="tela ativa">
-    <h1>🎮 Simulador de Batalha</h1>
-    <button onclick="iniciar()">Start Game</button>
+<!-- MENU -->
+<div id="menu">
+  <h1>🎮 Escolha seu personagem</h1>
+
+  <div class="box">
+    <h2>Kael 🔥</h2>
+    <p>Assassino de fogo</p>
+    <button onclick="selectChar('kael')">Selecionar</button>
   </div>
 
-  <!-- Tela do jogo -->
-  <div id="jogo" class="tela">
-    <h2>Jogador</h2>
-    <div class="barra">
-      <div id="vidaPlayer" class="vida"></div>
-    </div>
+  <div class="box">
+    <h2>Lyra 🌪️</h2>
+    <p>Manipuladora de ar</p>
+    <button onclick="selectChar('lyra')">Selecionar</button>
+  </div>
+</div>
 
-    <h2>Inimigo</h2>
-    <div class="barra">
-      <div id="vidaEnemy" class="vida"></div>
-    </div>
+<!-- JOGO -->
+<div id="game" class="hidden">
+  <h1 id="charName"></h1>
 
-    <button onclick="atacar()">Atacar</button>
-    <button onclick="curar()">Curar</button>
-
-    <h3 id="log"></h3>
+  <h3>HP</h3>
+  <div style="width:300px; margin:auto; border:2px solid #444;">
+    <div id="hpBar" class="hp-bar"></div>
   </div>
 
-  <script>
-    let hpPlayer = 100;
-    let hpEnemy = 100;
+  <p id="status"></p>
 
-    function iniciar() {
-      document.getElementById("menu").classList.remove("ativa");
-      document.getElementById("jogo").classList.add("ativa");
-      atualizarBarras();
-    }
+  <h3>Ações</h3>
+  <div id="actions"></div>
+</div>
 
-    function atualizarBarras() {
-      document.getElementById("vidaPlayer").style.width = hpPlayer + "%";
-      document.getElementById("vidaEnemy").style.width = hpEnemy + "%";
-    }
+<script>
 
-    function animarDano() {
-      document.body.classList.add("dano");
-      setTimeout(() => {
-        document.body.classList.remove("dano");
-      }, 300);
-    }
+let player = {};
+let enemyHP = 100;
 
-    function atacar() {
-      let danoPlayer = Math.floor(Math.random() * 20) + 5;
-      let danoEnemy = Math.floor(Math.random() * 15) + 5;
+function selectChar(char) {
 
-      hpEnemy -= danoPlayer;
-      hpPlayer -= danoEnemy;
+  if (char === "kael") {
+    player = {
+      name: "Kael",
+      hp: 100,
+      atk: 9,
+      mag: 4,
+      def: 5
+    };
+  }
 
-      document.getElementById("log").innerText =
-        "Você causou " + danoPlayer + " e recebeu " + danoEnemy;
+  if (char === "lyra") {
+    player = {
+      name: "Lyra",
+      hp: 100,
+      atk: 5,
+      mag: 7,
+      def: 5
+    };
+  }
 
-      animarDano();
-      checarFim();
-      atualizarBarras();
-    }
+  document.getElementById("menu").classList.add("hidden");
+  document.getElementById("game").classList.remove("hidden");
 
-    function curar() {
-      let cura = Math.floor(Math.random() * 15) + 5;
-      hpPlayer += cura;
+  startGame();
+}
 
-      let danoEnemy = Math.floor(Math.random() * 15) + 5;
-      hpPlayer -= danoEnemy;
+function startGame() {
+  document.getElementById("charName").innerText = player.name;
+  updateUI();
+  renderActions();
+}
 
-      document.getElementById("log").innerText =
-        "Curou " + cura + " mas recebeu " + danoEnemy;
+function updateUI() {
+  document.getElementById("hpBar").style.width = player.hp + "%";
+  document.getElementById("status").innerText =
+    "HP: " + player.hp + " | Inimigo: " + enemyHP;
+}
 
-      animarDano();
-      checarFim();
-      atualizarBarras();
-    }
+function renderActions() {
+  let html = "";
 
-    function checarFim() {
-      if (hpPlayer <= 0) {
-        alert("💀 Você perdeu!");
-        location.reload();
-      }
-      if (hpEnemy <= 0) {
-        alert("🏆 Você venceu!");
-        location.reload();
-      }
-    }
-  </script>
+  if (player.name === "Kael") {
+    html += `<button onclick="attack()">Investida Fatal</button>`;
+    html += `<button onclick="smoke()">Bomba de Fumaça</button>`;
+    html += `<button onclick="ultimateKael()">Fatalidade em Chamas</button>`;
+  }
+
+  if (player.name === "Lyra") {
+    html += `<button onclick="windAttack()">Sopro de Ar</button>`;
+    html += `<button onclick="defense()">Proteção de Ventosa</button>`;
+    html += `<button onclick="ultimateLyra()">Furacão 2000</button>`;
+  }
+
+  document.getElementById("actions").innerHTML = html;
+}
+
+/* KAEL */
+function attack() {
+  enemyHP -= player.atk * 2;
+  enemyTurn();
+  updateUI();
+}
+
+function smoke() {
+  document.getElementById("status").innerText = "Kael ficou invisível!";
+}
+
+function ultimateKael() {
+  enemyHP -= player.atk * 4;
+  enemyTurn();
+  updateUI();
+}
+
+/* LYRA */
+function windAttack() {
+  enemyHP -= player.mag * 2;
+  enemyTurn();
+  updateUI();
+}
+
+function defense() {
+  player.hp += 10;
+  updateUI();
+}
+
+function ultimateLyra() {
+  enemyHP -= player.mag * 5;
+  enemyTurn();
+  updateUI();
+}
+
+/* inimigo simples */
+function enemyTurn() {
+  let dmg = Math.floor(Math.random() * 10) + 5;
+  player.hp -= dmg;
+
+  if (player.hp <= 0) {
+    alert("Você perdeu!");
+    location.reload();
+  }
+
+  if (enemyHP <= 0) {
+    alert("Você venceu!");
+    location.reload();
+  }
+}
+
+</script>
 
 </body>
 </html>
