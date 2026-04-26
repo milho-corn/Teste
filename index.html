@@ -160,10 +160,11 @@ const allSkills = [
   {name:"ULT", dmg:6, cost:60, cd:5, level:5}
 ];
 
+/* 🔥 INIMIGO MAIS JUSTO */
 function createEnemy(){
   enemy = {
-    maxHp: 80 + player.level * 30,
-    hp: 80 + player.level * 30
+    maxHp: 60 + player.level * 25,
+    hp: 60 + player.level * 25
   };
 }
 
@@ -177,7 +178,7 @@ function startGame(){
     maxHp:100,
     mana:100,
     maxMana:100,
-    atk:8,
+    atk:10, // 🔥 buff leve
     level:1,
     xp:0
   };
@@ -236,7 +237,6 @@ function render(){
 
   let list = allSkills.filter(s => player.level >= s.level);
 
-  // sincroniza cooldown
   cooldown.length = list.length;
   for(let i=0;i<cooldown.length;i++){
     if(cooldown[i] === undefined) cooldown[i] = 0;
@@ -288,9 +288,11 @@ function useSkill(i){
   setTimeout(enemyTurn,700);
 }
 
+/* 🔥 DANO BALANCEADO */
 function enemyTurn(){
 
-  let dmg = Math.floor(5 + Math.random()*5 + player.level*2);
+  let dmg = Math.floor(3 + Math.random()*4 + player.level);
+
   player.hp -= dmg;
 
   damageText.innerText = "⚔️ "+dmg+" recebido";
