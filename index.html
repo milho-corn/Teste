@@ -5,14 +5,12 @@
 <title>PTT Battle</title>
 
 <style>
-
 body {
   font-family: "Segoe UI", Arial, sans-serif;
   background: linear-gradient(135deg, #dfe9f3, #f5f7fb);
   margin: 0;
 }
 
-/* telas */
 #game { display: none; }
 
 .screen {
@@ -22,7 +20,6 @@ body {
   height: 100vh;
 }
 
-/* card */
 .card-box {
   background: rgba(255,255,255,0.85);
   backdrop-filter: blur(10px);
@@ -39,7 +36,6 @@ body {
   margin-bottom: 20px;
 }
 
-/* input nome */
 input {
   padding: 12px;
   width: 80%;
@@ -48,7 +44,6 @@ input {
   margin-bottom: 20px;
 }
 
-/* botão */
 .start-btn {
   padding: 16px 35px;
   font-size: 18px;
@@ -59,7 +54,6 @@ input {
   box-shadow: 0 6px 15px rgba(0,0,0,0.1);
 }
 
-/* batalha */
 .game-container {
   background: rgba(255,255,255,0.9);
   backdrop-filter: blur(12px);
@@ -70,7 +64,6 @@ input {
   box-shadow: 0 20px 50px rgba(0,0,0,0.15);
 }
 
-/* barras */
 .bar-container {
   background: #e9edf5;
   border-radius: 12px;
@@ -79,13 +72,9 @@ input {
   position: relative;
 }
 
-.enemy-box {
-  margin-bottom: 35px;
-}
+.enemy-box { margin-bottom: 35px; }
 
-.bar {
-  height: 22px;
-}
+.bar { height: 22px; }
 
 .player { background: linear-gradient(90deg, #4caf50, #2e7d32); }
 .enemy { background: linear-gradient(90deg, #ef5350, #c62828); }
@@ -98,7 +87,6 @@ input {
   top: 0;
 }
 
-/* botões */
 .actions {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -116,11 +104,8 @@ button {
   box-shadow: 0 4px 10px rgba(0,0,0,0.1);
 }
 
-button:disabled {
-  opacity: 0.4;
-}
+button:disabled { opacity: 0.4; }
 
-/* cooldown */
 .cooldown-fill {
   position: absolute;
   left: 0;
@@ -132,46 +117,39 @@ button:disabled {
 }
 
 /* animações */
-.hit {
-  animation: hit 0.3s;
-}
+.hit { animation: hit 0.3s; }
 @keyframes hit {
+  0% { transform: translateX(0); }
   50% { transform: translateX(6px); }
+  100% { transform: translateX(0); }
 }
 
-.fade {
-  animation: fadeUp 0.4s;
-}
+.fade { animation: fadeUp 0.4s; }
 @keyframes fadeUp {
   from { opacity:0; transform:translateY(10px); }
   to { opacity:1; }
 }
 
-.flash {
-  animation: flash 0.4s;
-}
+.flash { animation: flash 0.4s; }
 @keyframes flash {
+  0% { filter: brightness(1); transform: scale(1); }
   50% { filter: brightness(2.5); transform: scale(1.05); }
+  100% { filter: brightness(1); transform: scale(1); }
 }
-
 </style>
 </head>
 
 <body>
 
-<!-- START -->
 <div id="startScreen" class="screen">
   <div class="card-box">
     <div class="title">PTT Battle</div>
-
     <input id="playerName" placeholder="Digite seu nome">
-
     <br>
     <button class="start-btn" onclick="startGame()">START</button>
   </div>
 </div>
 
-<!-- GAME -->
 <div id="game" class="screen">
   <div class="game-container">
 
@@ -187,7 +165,6 @@ button:disabled {
     </div>
 
     <p id="damageText"></p>
-
     <div id="actions" class="actions"></div>
 
   </div>
@@ -195,13 +172,25 @@ button:disabled {
 
 <script>
 
+// 🔥 DOM FIX
+const startScreen = document.getElementById("startScreen");
+const game = document.getElementById("game");
+const playerHp = document.getElementById("playerHp");
+const playerMana = document.getElementById("playerMana");
+const enemyHp = document.getElementById("enemyHp");
+const playerLabel = document.getElementById("playerLabel");
+const enemyLabel = document.getElementById("enemyLabel");
+const actions = document.getElementById("actions");
+const damageText = document.getElementById("damageText");
+const enemyBox = document.getElementById("enemyBox");
+const playerBox = document.getElementById("playerBox");
+
 let player = null;
 let enemy = { hp:100 };
 
 let cooldown = [0,0,0,0];
 const maxCd = [2,4,6,8];
 
-/* 🔥 SKILLS COM LEVEL */
 const allSkills = [
   {name:"Soco", dmg:1, cost:0, level:1},
   {name:"Corte", dmg:2, cost:20, level:2},
@@ -229,7 +218,6 @@ function startGame(){
   update();
 }
 
-/* regen */
 setInterval(()=>{
   if(player){
     player.mana = Math.min(player.maxMana, player.mana+3);
@@ -238,12 +226,13 @@ setInterval(()=>{
   }
 },1000);
 
-/* XP */
 function gainXP(amount){
   player.xp += amount;
 
-  if(player.xp >= player.level * 50){
-    player.xp = 0;
+  let needed = player.level * 50;
+
+  if(player.xp >= needed){
+    player.xp -= needed;
     player.level++;
     player.maxMana += 10;
     player.atk += 2;
@@ -273,12 +262,12 @@ function render(){
   let list = allSkills.filter(s => player.level >= s.level);
 
   actions.innerHTML = list.map((s,i)=>{
-
-    let disabled = cooldown[i]>0 || player.mana<s.cost;
+    let cd = cooldown[i] || 0;
+    let disabled = cd>0 || player.mana<s.cost;
 
     return `
       <button onclick="useSkill(${i})" ${disabled?"disabled":""}>
-        <div class="cooldown-fill" style="transform:scaleX(${cooldown[i]/maxCd[i]})"></div>
+        <div class="cooldown-fill" style="transform:scaleX(${cd/maxCd[i]})"></div>
         ${s.name} (${s.cost})
       </button>
     `;
@@ -290,6 +279,7 @@ function useSkill(i){
   let list = allSkills.filter(s => player.level >= s.level);
   let s = list[i];
 
+  if(!s) return;
   if(cooldown[i]>0 || player.mana<s.cost) return;
 
   player.mana -= s.cost;
@@ -298,6 +288,7 @@ function useSkill(i){
   let dmg = s.dmg * player.atk;
   enemy.hp -= dmg;
 
+  // animação reset
   enemyBox.classList.remove("hit","flash");
   void enemyBox.offsetWidth;
   enemyBox.classList.add("hit","flash");
@@ -328,6 +319,9 @@ function enemyTurn(){
   playerBox.classList.add("hit","flash");
 
   damageText.innerText = "⚔️ "+dmg+" recebido";
+  damageText.classList.remove("fade");
+  void damageText.offsetWidth;
+  damageText.classList.add("fade");
 
   if(player.hp<=0){
     return endGame("💀 Game Over");
@@ -338,9 +332,7 @@ function enemyTurn(){
 
 function endGame(text){
   damageText.innerText = text;
-  setTimeout(()=>{
-    location.reload();
-  },1500);
+  setTimeout(()=> location.reload(),1500);
 }
 
 </script>
