@@ -5,44 +5,42 @@
 <title>PTT Battle</title>
 
 <style>
-body {
-  font-family: Arial;
-  background: #eee;
-  margin: 0;
-}
-
-#game { display: none; }
+body { font-family: Arial; background:#eee; margin:0; }
+#game { display:none; }
 
 .screen {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  height: 100vh;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  height:100vh;
 }
 
 .card-box {
-  background: white;
-  padding: 30px;
-  border-radius: 15px;
-  text-align: center;
+  background:white;
+  padding:25px;
+  border-radius:15px;
+  text-align:center;
 }
 
-.bar-container {
-  background: #ccc;
-  margin: 8px 0;
+.bar-container { background:#ccc; margin:6px 0; }
+.bar { height:20px; }
+
+.player{background:green;}
+.enemy{background:red;}
+.mana{background:blue;}
+.xp{background:orange;}
+
+.actions{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:6px;
 }
 
-.bar { height: 20px; }
-
-.player { background: green; }
-.enemy { background: red; }
-.mana { background: blue; }
-.xp { background: orange; }
-
-.actions {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px;
+button{
+  padding:8px;
+  border:none;
+  border-radius:8px;
+  cursor:pointer;
 }
 </style>
 </head>
@@ -60,21 +58,10 @@ body {
 <div id="game" class="screen">
   <div class="card-box">
 
-    <div class="bar-container">
-      <div id="enemyHp" class="bar enemy"></div>
-    </div>
-
-    <div class="bar-container">
-      <div id="playerHp" class="bar player"></div>
-    </div>
-
-    <div class="bar-container">
-      <div id="playerMana" class="bar mana"></div>
-    </div>
-
-    <div class="bar-container">
-      <div id="playerXp" class="bar xp"></div>
-    </div>
+    <div class="bar-container"><div id="enemyHp" class="bar enemy"></div></div>
+    <div class="bar-container"><div id="playerHp" class="bar player"></div></div>
+    <div class="bar-container"><div id="playerMana" class="bar mana"></div></div>
+    <div class="bar-container"><div id="playerXp" class="bar xp"></div></div>
 
     <p id="playerLabel"></p>
     <p id="enemyLabel"></p>
@@ -82,6 +69,8 @@ body {
     <p id="damageText"></p>
 
     <div id="actions" class="actions"></div>
+    <br>
+    <button id="continueBtn" style="display:none;" onclick="nextBattle()">Continuar</button>
 
   </div>
 </div>
@@ -99,14 +88,18 @@ const enemyHp = document.getElementById("enemyHp");
 const playerLabel = document.getElementById("playerLabel");
 const enemyLabel = document.getElementById("enemyLabel");
 const damageText = document.getElementById("damageText");
+
 const actions = document.getElementById("actions");
+const continueBtn = document.getElementById("continueBtn");
 
 let player;
 let enemy;
 let cooldown = [];
 
+let wave = 1; // sistema de fases
+
 const allSkills = [
-  {name:"Soco", dmg:1.2, cost:0, cd:1, level:1}, // buff leve
+  {name:"Soco", dmg:1.2, cost:0, cd:1, level:1},
   {name:"Corte", dmg:2, cost:20, cd:2, level:2},
   {name:"Explosão", dmg:3, cost:30, cd:3, level:3},
   {name:"Cura", heal:25, cost:25, cd:4, level:4},
@@ -115,8 +108,8 @@ const allSkills = [
 
 function createEnemy(){
   enemy = {
-    maxHp: 70 + player.level * 20, // menos HP
-    hp: 70 + player.level * 20
+    maxHp: 60 + player.level * 20,
+    hp: 60 + player.level * 20
   };
 }
 
@@ -130,11 +123,12 @@ function startGame(){
     maxHp:100,
     mana:100,
     maxMana:100,
-    atk:9, // buff
+    atk:9,
     level:1,
     xp:0
   };
 
+  wave = 1;
   createEnemy();
 
   startScreen.style.display="none";
@@ -155,6 +149,7 @@ function gainXP(amount){
   player.xp += amount;
 
   let needed = player.level * 50;
+  let unlocked = null;
 
   if(player.xp >= needed){
     player.xp -= needed;
@@ -163,8 +158,10 @@ function gainXP(amount){
     player.maxMana += 10;
     player.atk += 2;
 
-    damageText.innerText = "🔥 LEVEL UP!";
+    unlocked = allSkills.find(s => s.level === player.level);
   }
+
+  return unlocked;
 }
 
 function update(){
@@ -179,7 +176,7 @@ function update(){
     player.name+" | Lv "+player.level+
     " | HP "+player.hp;
 
-  enemyLabel.innerText = "Inimigo Lv "+player.level;
+  enemyLabel.innerText = "Inimigo "+wave;
 
   render();
 }
@@ -194,13 +191,12 @@ function render(){
   }
 
   actions.innerHTML = list.map((s,i)=>{
-
     let cd = cooldown[i];
     let disabled = cd>0 || player.mana<s.cost;
 
     return `
       <button onclick="useSkill(${i})" ${disabled?"disabled":""}>
-        ${s.name} (${s.cost}) ${cd>0 ? "[CD "+cd+"]":""}
+        ${s.name} (${s.cost}) ${cd>0?"[CD "+cd+"]":""}
       </button>
     `;
   }).join("");
@@ -229,9 +225,26 @@ function useSkill(i){
   }
 
   if(enemy.hp<=0){
-    gainXP(25);
-    createEnemy();
-    update();
+    let unlocked = gainXP(25);
+
+    // PRIMEIRA FASE TEM 2 INIMIGOS
+    if(wave === 1){
+      wave++;
+      createEnemy();
+      player.hp = Math.min(player.maxHp, player.hp + 20);
+      damageText.innerText = "⚔️ Próximo inimigo! +20% HP";
+      update();
+      return;
+    }
+
+    // vitória completa
+    continueBtn.style.display = "block";
+    actions.innerHTML = "";
+
+    damageText.innerText =
+      "🏆 Vitória! +25 XP" +
+      (unlocked ? " | Nova habilidade: "+unlocked.name : "");
+
     return;
   }
 
@@ -241,24 +254,37 @@ function useSkill(i){
 
 function enemyTurn(){
 
-  // 🔥 NOVO BALANCEAMENTO
-  let dmg = Math.floor(3 + Math.random()*4 + player.level); 
-  // nível 1 = 4 a 7 (agora justo)
+  let dmg = Math.floor(3 + Math.random()*4 + player.level);
 
   player.hp -= dmg;
 
   damageText.innerText = "⚔️ "+dmg+" recebido";
 
   if(player.hp<=0){
-    return endGame();
+    actions.innerHTML = "";
+    continueBtn.style.display = "block";
+
+    damageText.innerText = "💀 Você perdeu! Continue...";
+    return;
   }
 
   update();
 }
 
-function endGame(){
-  damageText.innerText = "💀 Game Over";
-  setTimeout(()=> location.reload(),1500);
+function nextBattle(){
+
+  continueBtn.style.display = "none";
+
+  // recuperação entre batalhas
+  player.hp = Math.min(player.maxHp, player.hp + player.maxHp*0.2);
+  player.mana = Math.min(player.maxMana, player.mana + player.maxMana*0.2);
+
+  wave = 1;
+  createEnemy();
+
+  damageText.innerText = "✨ Descanso... +20% HP/Mana";
+
+  update();
 }
 
 </script>
